@@ -1,0 +1,1169 @@
+import { Tabs, TabsList, TabsTrigger, TabsContent, TabsWrapper } from "@/components/ui/tabs";
+import { Card, CardContent } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { useState, useEffect } from "react";
+import { ToastContainer, toast } from "react-toastify";
+import "react-toastify/dist/ReactToastify.css";
+
+import * as XLSX from 'xlsx';
+import { FaSave, FaArrowLeft, FaTrash, FaPlus, FaSearch, FaPaperclip, FaArrowRight, FaArrowCircleLeft } from 'react-icons/fa';
+
+const COLORS = ["#0088FE", "#00C49F", "#FFBB28", "#FF8042"];
+
+// Define a consistent color mapping for owners
+const OWNER_COLORS = {
+  'Deva': '#0088FE',
+  'Latha': '#00C49F',
+  'Shiva': '#FFBB28',
+  'Roja': '#FF8042',
+  'Unassigned': '#888888',
+};
+
+// Helper to get color for an owner
+const getOwnerColor = (owner, idx) => OWNER_COLORS[owner] || COLORS[idx % COLORS.length];
+
+// Custom legend for pie chart (used below each chart)
+function PieChartLegend({ data, total }) {
+  return (
+    <ul className="flex flex-wrap gap-4 mt-4 justify-center">
+      {data.map((entry, idx) => {
+        const percent = total ? ((entry.value / total) * 100).toFixed(1) : 0;
+        return (
+          <li key={entry.name} className="flex items-center">
+            <span
+              style={{
+                display: 'inline-block',
+                width: 16,
+                height: 16,
+                backgroundColor: getOwnerColor(entry.name, idx),
+                marginRight: 8,
+                borderRadius: 4,
+              }}
+            ></span>
+            <span className="font-medium">{`${entry.name} = ${entry.value} (${percent}%)`}</span>
+          </li>
+        );
+      })}
+    </ul>
+  );
+}
+
+// New bug fields and mock data based on user image
+const bugFields = [
+ { key: 'application', label: 'Application', desc: 'Application for which bug is reported' },
+ { key: 'businessFunction', label: 'Business Function', desc: 'High level Function within the Application' },
+ { key: 'incidentId', label: 'Incident/Bug ID', desc: 'Incident Number from SNOW or Bug ID from ADO' },
+ { key: 'bugDescription', label: 'Bug Description', desc: 'Short Description from SNOW or ADO' },
+ { key: 'dateReported', label: 'Date Reported', desc: 'Date the Bug was reported' },
+ { key: 'bugStatus', label: 'Bug Status', desc: 'ADO Status' },
+ { key: 'environment', label: 'Environment', desc: 'UAT or PROD' },
+ { key: 'rootCause', label: 'High Level Root Cause', desc: 'Select from mentioned list' },
+ { key: 'correctiveStatus', label: 'Corrective Action Status', desc: 'Open or Closed' },
+ { key: 'correctiveOwner', label: 'Corrective Action Owner', desc: 'Team Member Name' },
+ { key: 'lastUpdated', label: 'Last Updated', desc: 'Last Updated Date' },
+];
+
+// Replace mockBugs with stateful bugs array
+const defaultBugs = [
+ {
+ application: 'GIC', businessFunction: 'GIC', incidentId: '526480', bugDescription: 'GIC Processing Error for 9/1/2025 Renewal Group', dateReported: '22-Jul', bugStatus: 'New', environment: '4 - Prod', rootCause: 'Environment Issue', correctiveStatus: 'Open', correctiveOwner: 'Latha Sri', lastUpdated: '07-29-2025 04:07:29',
+ },
+ {
+ application: 'Facets', businessFunction: 'Batch', incidentId: '526481', bugDescription: 'Batch job failed for nightly process', dateReported: '23-Jul', bugStatus: 'Committed', environment: '3 - UAT', rootCause: 'Test Data Unavailable', correctiveStatus: 'Closed', correctiveOwner: 'Deva', lastUpdated: '07-30-2025 10:15:00',
+ },
+ {
+ application: 'ETL', businessFunction: 'OncoHealth', incidentId: '526482', bugDescription: 'ETL mapping error for new field', dateReported: '24-Jul', bugStatus: 'New', environment: '4 - Prod', rootCause: 'Requirement Enhancement', correctiveStatus: 'Open', correctiveOwner: 'Shiva', lastUpdated: '07-31-2025 09:00:00',
+ },
+ {
+ application: 'Facets', businessFunction: 'Cigna', incidentId: '526483', bugDescription: 'Cigna integration timeout', dateReported: '25-Jul', bugStatus: 'New', environment: '3 - UAT', rootCause: 'Missed QA Test Scenario', correctiveStatus: 'Closed', correctiveOwner: 'Roja', lastUpdated: '08-01-2025 13:45:00',
+ },
+];
+const getInitialBugs = () => {
+ const saved = localStorage.getItem('itqa_bugs');
+ return saved ? JSON.parse(saved) : defaultBugs;
+};
+
+// Mock bug data for table
+// const mockBugs = [
+//{ id: 1, title: "Login fails on Safari", status: "Open", assignee: "Deva" },
+//{ id: 2, title: "UI glitch on dashboard", status: "In Progress", assignee: "Latha" },
+//{ id: 3, title: "Export to Excel broken", status: "Resolved", assignee: "Shiva" },
+//{ id: 4, title: "Notifications not sent", status: "Closed", assignee: "Roja" },
+//{ id: 5, title: "Performance issue on load", status: "Open", assignee: "Latha" },
+// ];
+
+// Add state for selected assignee
+// const [selectedAssignee, setSelectedAssignee] = useState(null); // This line is moved to BugsDashboard
+
+// Add state for selectedBug
+// const [selectedBug, setSelectedBug] = useState(null); // This line is moved to BugsDashboard
+
+// Add state for global search result
+// const [searchResultCount, setSearchResultCount] = useState(null);
+
+// Handler for global search
+// const handleGlobalSearch = (e) => {
+// if (e.key === 'Enter') {
+// const bug = bugs.find(b => b.incidentId === search.trim());
+// if (bug) {
+// setSelectedBug(bug);
+// setSelectedAssignee(null);
+// setTabValue('tab1');
+// setSearchResultCount(1);
+// } else {
+// setSearchResultCount(0);
+// toast.error('0 records found');
+// }
+// }
+// };
+
+// Move header bar outside the main content and make it always visible
+function DashboardHeader({ tabValue, setTabValue, darkMode, setDarkMode, search, setSearch, headerTitle, setSelectedAssignee, handleGlobalSearch, showDashboardButton }) {
+  return (
+    <header className="w-full flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 bg-white dark:bg-gray-800 shadow z-10">
+      <div className="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
+        {showDashboardButton && (
+          <Button onClick={() => { setTabValue('tab1'); setSelectedAssignee(null); setSearch(''); }} aria-label="Go to Bugs Dashboard" tabIndex={0}>Bugs Dashboard</Button>
+        )}
+      </div>
+      <div className="flex-grow flex justify-center items-center">
+        <div className="bg-blue-100 dark:bg-blue-900 dark:text-blue-100 text-blue-900 font-bold text-xl md:text-2xl px-6 md:px-10 py-2 rounded-full shadow-md min-w-[200px] md:min-w-[320px] text-center mx-auto" style={{ outline: 'none' }} tabIndex={0} aria-label="ITQA Bugs Dashboard heading">
+          {headerTitle}
+        </div>
+      </div>
+      <div className="flex items-center justify-end mt-4 md:mt-0 w-full md:w-auto gap-4">
+        {/* Dark mode toggle switch */}
+        <div className="flex items-center mr-2">
+          <span className="mr-2 text-xl">☀️</span>
+          <button
+            onClick={() => setDarkMode((d) => !d)}
+            className={`relative inline-flex items-center h-6 rounded-full w-12 transition-colors focus:outline-none border border-gray-300 dark:border-gray-600 ${darkMode ? 'bg-gray-700' : 'bg-gray-300'}`}
+            aria-label="Toggle dark mode"
+            tabIndex={0}
+          >
+            <span
+              className={`inline-block w-5 h-5 transform bg-white rounded-full shadow transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-1'}`}
+            />
+          </button>
+          <span className="ml-2 text-xl">🌙</span>
+        </div>
+        {/* Search bar */}
+        <div className="relative w-full md:w-56">
+          <input
+            id="global-search"
+            type="text"
+            value={search}
+            onChange={e => setSearch(e.target.value)}
+            onKeyDown={handleGlobalSearch}
+            placeholder="Search..."
+            className="border rounded pl-10 pr-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-700 focus-visible:ring-4 focus-visible:ring-blue-400 w-full bg-white text-gray-900"
+            aria-label="Search bugs"
+            tabIndex={0}
+          />
+          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4-4m0 0A7 7 0 104 4a7 7 0 0013 13z" />
+            </svg>
+          </span>
+        </div>
+      </div>
+    </header>
+  );
+}
+
+export default function BugsDashboard() {
+ // Dropdown options at the top
+ const applicationOptions = ['GIC', 'Facets', 'ETL', 'EDM'];
+ const businessFunctionOptions = ['Batch', 'GIC', 'Cigna', 'OncoHealth'];
+ const environmentOptions = ['3 - UAT', '4 - Prod'];
+ const rootCauseOptions = [
+ 'Environment Issue',
+ 'Test Data Unavailable',
+ 'Missed QA Test Scenario',
+ 'Requirement Enhancement',
+ 'Not a Valid Bug',
+ 'Unable to Recreate',
+ 'Not QA Tested',
+ ];
+ const correctiveStatusOptions = ['Open', 'Closed'];
+ const correctiveOwnerOptions = ['Deva', 'Latha', 'Roja', 'Shiva'];
+
+ // All useState/useEffect hooks should be here, not at the top level of the file
+ const [bugs, setBugs] = useState(getInitialBugs());
+ const [selectedBug, setSelectedBug] = useState(null);
+ const [selectedAssignee, setSelectedAssignee] = useState(null);
+ const [tabValue, setTabValue] = useState("tab1");
+ const [search, setSearch] = useState("");
+ const [uploadLoading, setUploadLoading] = useState(false);
+ const [extractLoading, setExtractLoading] = useState(false);
+ const [viewMode, setViewMode] = useState("pie"); // "pie" or "table"
+ const [dragActive, setDragActive] = useState(false);
+ const [statusFilter, setStatusFilter] = useState("");
+ const [assigneeFilter, setAssigneeFilter] = useState("");
+ const [darkMode, setDarkMode] = useState(false);
+ const [deletedBug, setDeletedBug] = useState(null);
+ const [deletedTimeout, setDeletedTimeout] = useState(null);
+ // For Bug Details screen
+ const [editBug, setEditBug] = useState(null);
+ const [detailedComment, setDetailedComment] = useState("");
+ const [comments, setComments] = useState([]);
+ // Add state for QA Corrective Action and tab
+ const [qaCorrectiveAction, setQaCorrectiveAction] = useState('');
+ const [detailsTab, setDetailsTab] = useState('comments'); // 'comments' or 'qa'
+ const [unsaved, setUnsaved] = useState(false);
+
+ // Add the hook here:
+ const [searchResultCount, setSearchResultCount] = useState(null);
+
+ // Add state for current week and last week bugs
+ const [currentWeekBugs, setCurrentWeekBugs] = useState([]);
+ const [lastWeekBugs, setLastWeekBugs] = useState([]);
+
+ // Add state for environmentFilter and bugIdFilter in BugsDashboard
+ const [environmentFilter, setEnvironmentFilter] = useState("");
+ const [bugIdFilter, setBugIdFilter] = useState("");
+
+ // Add previousTab state
+const [previousTab, setPreviousTab] = useState('tab1');
+
+ // Move handleGlobalSearch here so it can access state/hooks
+ const handleGlobalSearch = (e) => {
+  if (e.key === 'Enter') {
+    // Search all bugs (currentWeekBugs + lastWeekBugs) for the entered Bug ID
+    let bug = currentWeekBugs.find(b => b.incidentId === search.trim());
+    if (bug) {
+      setSelectedAssignee(bug.correctiveOwner || 'Unassigned');
+      setPieFilter('current');
+      setTabValue('owner');
+      setSearchResultCount(1);
+      return;
+    }
+    bug = lastWeekBugs.find(b => b.incidentId === search.trim());
+    if (bug) {
+      setSelectedAssignee(bug.correctiveOwner || 'Unassigned');
+      setPieFilter('last');
+      setTabValue('owner');
+      setSearchResultCount(1);
+      return;
+    }
+    setSearchResultCount(0);
+    toast.error('0 records found');
+  }
+};
+
+ // When a new bug is selected, set editBug, comments, qaCorrectiveAction, and detailedComment to the last saved state
+ useEffect(() => {
+  if (selectedBug) {
+    setEditBug({ ...selectedBug });
+    setDetailedComment("");
+    setComments(selectedBug.comments || []);
+    setQaCorrectiveAction(selectedBug.qaCorrectiveAction || '');
+  }
+}, [selectedBug]);
+
+ // Track unsaved changes
+ useEffect(() => {
+  if (selectedBug && editBug) {
+    const baseChanged =
+      JSON.stringify({ ...selectedBug, comments: comments }) !==
+        JSON.stringify({ ...editBug, comments: comments }) ||
+      qaCorrectiveAction !== (selectedBug.qaCorrectiveAction || '');
+    const commentChanged = detailedComment.trim().length > 0;
+    setUnsaved(baseChanged || commentChanged);
+  } else {
+    setUnsaved(false);
+  }
+}, [selectedBug, editBug, comments, qaCorrectiveAction, detailedComment]);
+
+ // Handler for posting a comment (auto-saves the comment)
+ const handlePostComment = () => {
+  if (!selectedBug) return;
+  if (detailedComment.trim()) {
+    const now = new Date().toLocaleString();
+    const newComments = [
+      { text: detailedComment, time: now },
+      ...comments,
+    ];
+    // Update local comments state immediately for UI
+    setComments(newComments);
+    setDetailedComment("");
+
+    // Build an updated bug object for persistence (only persist comments and lastUpdated)
+    const updatedBug = { ...selectedBug, comments: newComments, lastUpdated: now };
+
+    // Determine where the bug currently lives and update that collection
+    const inCurrent = currentWeekBugs.some(b => b.incidentId === selectedBug.incidentId);
+    const inLast = lastWeekBugs.some(b => b.incidentId === selectedBug.incidentId);
+
+    let updatedCurrent = currentWeekBugs;
+    let updatedLast = lastWeekBugs;
+
+    if (inCurrent) {
+      updatedCurrent = currentWeekBugs.map(b => b.incidentId === selectedBug.incidentId ? updatedBug : b);
+    } else if (inLast) {
+      updatedLast = lastWeekBugs.map(b => b.incidentId === selectedBug.incidentId ? updatedBug : b);
+    } else {
+      // If not found in either, add to current as a fallback
+      updatedCurrent = [updatedBug, ...currentWeekBugs];
+    }
+
+    // Persist to state and localStorage
+    setCurrentWeekBugs(updatedCurrent);
+    setLastWeekBugs(updatedLast);
+    localStorage.setItem('currentWeekBugs', JSON.stringify(updatedCurrent));
+    localStorage.setItem('lastWeekBugs', JSON.stringify(updatedLast));
+
+    // Update selectedBug so unsaved logic reflects persisted comments
+    setSelectedBug(updatedBug);
+
+    toast.success('Comment posted and saved.');
+  }
+};
+
+ // Handler for saving bug changes
+ const handleSaveBug = () => {
+ if (!editBug) return;
+ const now = new Date().toLocaleString();
+ const updatedBug = { ...editBug, comments, qaCorrectiveAction, lastUpdated: now };
+ // Update in currentWeekBugs or lastWeekBugs
+ let updatedCurrent = currentWeekBugs.map(b => b.incidentId === editBug.incidentId ? updatedBug : b);
+ let updatedLast = lastWeekBugs.map(b => b.incidentId === editBug.incidentId ? updatedBug : b);
+ // If not found, add to current
+ if (!updatedCurrent.find(b => b.incidentId === editBug.incidentId) && !updatedLast.find(b => b.incidentId === editBug.incidentId)) {
+ updatedCurrent = [updatedBug, ...updatedCurrent];
+ }
+ setCurrentWeekBugs(updatedCurrent);
+ setLastWeekBugs(updatedLast);
+ localStorage.setItem('currentWeekBugs', JSON.stringify(updatedCurrent));
+ localStorage.setItem('lastWeekBugs', JSON.stringify(updatedLast));
+ setSelectedBug(updatedBug);
+ toast.success('Bug details saved!');
+ };
+
+ // Handler for navigation with unsaved changes
+ const handleNavWithUnsaved = (navFn) => {
+  if (unsaved) {
+    toast.error('You have unsaved changes. Please save before navigating away!');
+    return;
+  }
+  // Reset edit state to last saved bug when navigating away
+  if (selectedBug) {
+    setEditBug({ ...selectedBug });
+    setComments(selectedBug.comments || []);
+    setQaCorrectiveAction(selectedBug.qaCorrectiveAction || '');
+    setDetailedComment('');
+  }
+  navFn();
+};
+
+ // Persist dark mode preference
+ useEffect(() => {
+ if (darkMode) {
+ document.documentElement.classList.add("dark");
+ } else {
+ document.documentElement.classList.remove("dark");
+ }
+ }, [darkMode]);
+
+ // Enhanced tooltip for pie chart
+ const CustomTooltip = ({ active, payload, total }) => {
+ if (active && payload && payload.length) {
+ const { name, value } = payload[0];
+ const percent = total ? ((value / total) * 100).toFixed(1) : 0;
+ return (
+ <div className="bg-white p-2 rounded shadow text-sm text-gray-900 border">
+ <div><b>{name}</b></div>
+ <div>Bugs: {value}</div>
+ <div>Percent: {percent}%</div>
+ </div>
+ );
+ }
+ return null;
+ };
+ // Placeholder for email summary
+ const handleSendSummary = async () => {
+  setExtractLoading(true);
+  try {
+    // Prepare headers based on bugFields labels
+    const headers = bugFields.map(f => f.label);
+
+    // Helper to map bug to row following bugFields order
+    const toRow = (bug) => bugFields.map(f => (bug && bug[f.key] !== undefined ? bug[f.key] : ''));
+
+    // Filter Open status bugs
+    const openCurrent = (Array.isArray(currentWeekBugs) ? currentWeekBugs : []).filter(b => (b.correctiveStatus || '').toLowerCase() === 'open');
+    const openLast = (Array.isArray(lastWeekBugs) ? lastWeekBugs : []).filter(b => (b.correctiveStatus || '').toLowerCase() === 'open');
+
+    // If no open bugs at all, show message and exit
+    if (openCurrent.length === 0 && openLast.length === 0) {
+      toast.info('No Open status bugs to export.');
+      return;
+    }
+
+    // Build AOAs
+    const sheet1Data = [headers, ...openCurrent.map(toRow)];
+    const sheet2Data = [headers, ...openLast.map(toRow)];
+
+    // Create workbook and sheets
+    const wb = XLSX.utils.book_new();
+    const ws1 = XLSX.utils.aoa_to_sheet(sheet1Data);
+    const ws2 = XLSX.utils.aoa_to_sheet(sheet2Data);
+    XLSX.utils.book_append_sheet(wb, ws1, 'Current Week Bugs');
+    XLSX.utils.book_append_sheet(wb, ws2, 'Bugs upto Last Week');
+
+    // Trigger download
+    XLSX.writeFile(wb, 'Weekly Bugs Summary.xlsx');
+
+    toast.success('Weekly bugs summary downloaded.');
+  } catch (err) {
+    console.error(err);
+    toast.error('Failed to extract summary.');
+  } finally {
+    setExtractLoading(false);
+  }
+};
+
+ // Drag-and-drop handlers for file upload
+ const handleDragOver = (e) => {
+ e.preventDefault();
+ setDragActive(true);
+ };
+ const handleDragLeave = (e) => {
+ e.preventDefault();
+ setDragActive(false);
+ };
+ const handleDrop = (e) => {
+ e.preventDefault();
+ setDragActive(false);
+ if (e.dataTransfer.files && e.dataTransfer.files.length > 0) {
+ // This part is now handled by the green Upload Excel button
+ }
+ };
+
+ // Minimal bug fields expected from Excel
+ const minimalBugFields = ['incidentId', 'bugDescription', 'dateReported', 'bugStatus', 'environment', 'correctiveOwner'];
+
+ // Excel upload handler: parse and extract required fields, update state
+ const handleExcelUpload = async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const data = await file.arrayBuffer();
+  const workbook = XLSX.read(data);
+  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+  const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+  // Find header row and map columns
+  const headers = json[0];
+  const idx = {
+    incidentId: headers.findIndex(h => h && h.toString().toLowerCase().includes('incident')),
+    bugDescription: headers.findIndex(h => h && h.toString().toLowerCase().includes('description')),
+    dateReported: headers.findIndex(h => h && h.toString().toLowerCase().includes('date')),
+    bugStatus: headers.findIndex(h => h && h.toString().toLowerCase().includes('status')),
+    environment: headers.findIndex(h => h && h.toString().toLowerCase().includes('environment')),
+    correctiveOwner: headers.findIndex(h => h && h.toString().toLowerCase().includes('owner')),
+  };
+  const now = new Date().toLocaleString();
+  const newBugs = json.slice(1).map(row => ({
+    incidentId: row[idx.incidentId]?.toString() || '',
+    bugDescription: row[idx.bugDescription]?.toString() || '',
+    dateReported: row[idx.dateReported]?.toString() || '',
+    bugStatus: row[idx.bugStatus]?.toString() || '',
+    environment: row[idx.environment]?.toString() || '',
+    correctiveOwner: row[idx.correctiveOwner]?.toString() || 'Unassigned',
+    businessFunction: '',
+    rootCause: '',
+    correctiveStatus: '',
+    lastUpdated: now,
+    comments: [],
+  })).filter(bug => bug.incidentId);
+  // Move all existing bugs to lastWeekBugs, set currentWeekBugs to newBugs
+  const allOldBugs = [...currentWeekBugs, ...lastWeekBugs];
+  setLastWeekBugs(allOldBugs);
+  setCurrentWeekBugs(newBugs);
+  setBugs([...newBugs, ...allOldBugs]);
+  // Persist to localStorage
+  localStorage.setItem('currentWeekBugs', JSON.stringify(newBugs));
+  localStorage.setItem('lastWeekBugs', JSON.stringify(allOldBugs));
+  toast.success('Bugs uploaded!');
+};
+
+ // On mount, load from localStorage (do not merge with defaultBugs)
+ useEffect(() => {
+  const cw = JSON.parse(localStorage.getItem('currentWeekBugs') || '[]');
+  const lw = JSON.parse(localStorage.getItem('lastWeekBugs') || '[]');
+  setCurrentWeekBugs(cw);
+  setLastWeekBugs(lw);
+  setBugs([...cw, ...lw]); // Always set bugs to all bugs on mount
+}, []);
+
+ // Pie chart data (group by correctiveOwner)
+ const safeCurrentWeekBugs = Array.isArray(currentWeekBugs) ? currentWeekBugs : [];
+ const safeLastWeekBugs = Array.isArray(lastWeekBugs) ? lastWeekBugs : [];
+ const dataCurrentWeek = Object.entries(
+ safeCurrentWeekBugs.reduce((acc, bug) => {
+ const owner = bug.correctiveOwner || 'Unassigned';
+ acc[owner] = (acc[owner] || 0) + 1;
+ return acc;
+ }, {})
+ ).map(([name, value]) => ({ name, value }));
+ const dataLastWeek = Object.entries(
+ safeLastWeekBugs.reduce((acc, bug) => {
+ const owner = bug.correctiveOwner || 'Unassigned';
+ acc[owner] = (acc[owner] || 0) + 1;
+ return acc;
+ }, {})
+ ).map(([name, value]) => ({ name, value }));
+
+ // Pie chart click handlers: show only current or last week bugs
+ const [pieFilter, setPieFilter] = useState('current'); // 'current' or 'last'
+ // In handlePieClick, set previousTab before navigating to owner page
+const handlePieClick = (weekType, owner) => {
+  setPreviousTab(tabValue);
+  setPieFilter(weekType); // 'current' or 'last'
+  setSelectedAssignee(owner || '');
+  setTabValue('owner');
+};
+
+ // Add a function to clear all bugs and localStorage
+ const clearAllBugs = () => {
+ setCurrentWeekBugs([]);
+ setLastWeekBugs([]);
+ localStorage.removeItem('currentWeekBugs');
+ localStorage.removeItem('lastWeekBugs');
+ toast.success('All bugs cleared. Ready for fresh upload!');
+ };
+
+ // Compute the list of bugs for the current owner (for Previous/Next navigation)
+const ownerBugs = selectedAssignee
+  ? (pieFilter === 'current' ? currentWeekBugs : lastWeekBugs).filter(bug => (bug.correctiveOwner || '').toLowerCase() === selectedAssignee.toLowerCase())
+  : [];
+const currentBugIndex = ownerBugs.findIndex(bug => bug.incidentId === (selectedBug && selectedBug.incidentId));
+const hasPrevBug = currentBugIndex > 0;
+const hasNextBug = currentBugIndex >= 0 && currentBugIndex < ownerBugs.length - 1;
+const handlePrevBug = () => {
+  if (hasPrevBug) {
+    setSelectedBug(ownerBugs[currentBugIndex - 1]);
+  }
+};
+const handleNextBug = () => {
+  if (hasNextBug) {
+    setSelectedBug(ownerBugs[currentBugIndex + 1]);
+  }
+};
+
+ return (
+ <div className={`flex flex-col min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+ <DashboardHeader
+ tabValue={tabValue}
+ setTabValue={setTabValue}
+ darkMode={darkMode}
+ setDarkMode={setDarkMode}
+ search={search}
+ setSearch={setSearch}
+ headerTitle={selectedBug ? `ITQA Bug - ${selectedBug.incidentId}` : selectedAssignee ? 'ITQA Bugs' : 'ITQA Bugs Dashboard'}
+ setSelectedAssignee={setSelectedAssignee}
+ handleGlobalSearch={handleGlobalSearch}
+ showDashboardButton={!selectedBug}
+ />
+ {selectedBug ? (
+ editBug ? (
+ <div className="flex flex-col items-center w-full p-4 md:p-8">
+  <div className="flex w-full max-w-6xl justify-between mb-4">
+ <div className="flex gap-2">
+ <Button onClick={() => handleNavWithUnsaved(() => { setSelectedBug(null); setSearchResultCount(null); setSearch(""); })}><FaArrowLeft className="inline mr-2" />Back</Button>
+ <Button onClick={() => handleNavWithUnsaved(() => { setTabValue('tab1'); setSelectedAssignee(null); setSelectedBug(null); setSearchResultCount(null); setSearch(""); })}><FaArrowLeft className="inline mr-2" />Bugs Dashboard</Button>
+ </div>
+ <div className="flex gap-2">
+ <Button><FaPaperclip className="inline mr-2" />Attachments</Button>
+ <Button onClick={handleSaveBug}><FaSave className="inline mr-2" />Save</Button>
+ <Button><FaTrash className="inline mr-2" />Delete</Button>
+ <Button onClick={handlePrevBug} disabled={!hasPrevBug}><FaArrowCircleLeft className="inline mr-2" />Previous</Button>
+ <Button onClick={handleNextBug} disabled={!hasNextBug}><FaArrowRight className="inline mr-2" />Next</Button>
+ </div>
+ </div>
+ <Card className="bg-white shadow rounded-lg w-full max-w-6xl">
+ <CardContent>
+ <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+ <div>
+ <b>Application</b> <select className="border rounded px-2 py-1 w-48" value={editBug.application || ''} onChange={e => setEditBug({ ...editBug, application: e.target.value })}>
+  <option value="" disabled>Select one Option</option>
+  {applicationOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+</select>
+ </div>
+ <div><b>Environment</b> <select className="border rounded px-2 py-1 w-48" value={editBug.environment || ''} onChange={e => setEditBug({ ...editBug, environment: e.target.value })}>
+  <option value="" disabled>Select one Option</option>
+  {environmentOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+</select>
+ </div>
+ <div>
+ <b>Business Function</b> <select className="border rounded px-2 py-1 w-48" value={editBug.businessFunction} onChange={e => setEditBug({ ...editBug, businessFunction: e.target.value })}>
+  <option value="" disabled>Select one Option</option>
+  {businessFunctionOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+</select>
+ </div>
+ <div>
+ <b>High Level Root Cause</b> <select className="border rounded px-2 py-1 w-48" value={editBug.rootCause} onChange={e => setEditBug({ ...editBug, rootCause: e.target.value })}>
+  <option value="" disabled>Select one Option</option>
+  {rootCauseOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+</select>
+ </div>
+ <div>
+ <b>Incident/Bug ID</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.incidentId} readOnly />
+ </div>
+ <div>
+ <b>Corrective Action Status</b> <select className="border rounded px-2 py-1 w-48" value={editBug.correctiveStatus} onChange={e => setEditBug({ ...editBug, correctiveStatus: e.target.value })}>
+  <option value="" disabled>Select one Option</option>
+  {correctiveStatusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+</select>
+ </div>
+ <div>
+ <b>Date Reported</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.dateReported} readOnly />
+ </div>
+ <div>
+ <b>Corrective Action Owner</b> <select className="border rounded px-2 py-1 w-48" value={editBug.correctiveOwner || ''} onChange={e => setEditBug({ ...editBug, correctiveOwner: e.target.value })}>
+  <option value="" disabled>Select one Option</option>
+  {correctiveOwnerOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
+</select>
+ </div>
+ <div>
+ <b>Bug Status</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.bugStatus} readOnly />
+ </div>
+ <div>
+ <b>Last Updated</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.lastUpdated} readOnly />
+ </div>
+ </div>
+ <div className="mb-4 flex items-center gap-2">
+ <b>Bug Description</b> <input className="border rounded px-2 py-1 flex-1 bg-gray-100" value={editBug.bugDescription} readOnly />
+ </div>
+ {/* Details Tabs */}
+ <div className="mb-4">
+ <div className="flex gap-2 mb-2">
+ <button
+ className={`px-4 py-1 rounded-t ${detailsTab === 'qa' ? 'bg-blue-700 text-white' : 'bg-gray-200 text-gray-700'}`}
+ onClick={() => setDetailsTab('qa')}
+ >
+ QA Corrective Action
+ </button>
+ <button
+ className={`px-4 py-1 rounded-t ${detailsTab === 'comments' ? 'bg-blue-700 text-white' : 'bg-gray-200 text-gray-700'}`}
+ onClick={() => setDetailsTab('comments')}
+ >
+ Detailed Comments
+ </button>
+ </div>
+ <div className="border rounded-b bg-white p-4">
+ {detailsTab === 'qa' ? (
+ <div>
+ <b>QA Corrective Action:</b>
+ <input
+ className="border rounded px-2 py-1 w-full mt-2"
+ value={qaCorrectiveAction}
+ onChange={e => setQaCorrectiveAction(e.target.value)}
+ placeholder="Enter QA Corrective Action..."
+ />
+ </div>
+ ) : (
+ <div>
+ <b>Detailed Comments:</b>
+ <div className="flex gap-2 mb-4 mt-2">
+ <input
+ className="border rounded px-2 py-1 flex-1"
+ value={detailedComment}
+ onChange={e => setDetailedComment(e.target.value)}
+ placeholder="Add a comment..."
+ />
+ <Button onClick={handlePostComment}><FaPlus className="inline mr-2" />Post</Button>
+ </div>
+ <div>
+ {comments.map((c, i) => (
+ <div key={i} className="border-b py-2 text-sm flex justify-between">
+ <span>{c.text}</span>
+ <span className="text-xs text-gray-400">{c.time}</span>
+ </div>
+ ))}
+ </div>
+ </div>
+ )}
+ </div>
+ </div>
+ </CardContent>
+ </Card>
+ </div>
+ ) : null
+ ) : selectedAssignee ? (
+ <div className="flex flex-col items-center w-full p-4 md:p-8">
+ {searchResultCount !== null && (
+   <div className="mb-2 text-sm font-semibold text-blue-700">{searchResultCount} result{searchResultCount === 1 ? '' : 's'} found</div>
+ )}
+ <button
+  className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+  onClick={() => { setSelectedAssignee(null); setAssigneeFilter(''); setTabValue(previousTab || 'tab1'); setSearchResultCount(null); setSearch(""); }}
+>
+  <FaArrowLeft className="inline mr-2" />Back
+</button>
+ <Card className="bg-white dark:bg-gray-800 shadow rounded-lg w-full max-w-6xl">
+ <CardContent>
+ <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-blue-100">ITQA Team Bugs - {selectedAssignee}</h2>
+ <div className="flex flex-wrap gap-4 mb-4 items-center">
+ <input
+ type="text"
+ value={search}
+ onChange={e => setSearch(e.target.value)}
+ placeholder="Search by text..."
+ className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ aria-label="Search bugs by text"
+ />
+ <select
+ value={statusFilter}
+ onChange={e => setStatusFilter(e.target.value)}
+ className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ aria-label="Filter by corrective action status"
+ >
+ <option value="">All Statuses</option>
+ <option value="Open">Open</option>
+ <option value="Closed">Closed</option>
+ </select>
+ <select
+ value={assigneeFilter}
+ onChange={e => setAssigneeFilter(e.target.value)}
+ className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ aria-label="Filter by assignee"
+ >
+ <option value="">All Assignees</option>
+ <option value="Unassigned">Unassigned</option>
+ <option value="Deva">Deva</option>
+ <option value="Latha">Latha</option>
+ <option value="Shiva">Shiva</option>
+ <option value="Roja">Roja</option>
+ </select>
+ <select
+ value={environmentFilter}
+ onChange={e => setEnvironmentFilter(e.target.value)}
+ className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ aria-label="Filter by environment"
+ >
+ <option value="">All Environments</option>
+ <option value="3 - UAT">3 - UAT</option>
+ <option value="4 - Prod">4 - Prod</option>
+ </select>
+ <select
+ value={bugIdFilter}
+ onChange={e => setBugIdFilter(e.target.value)}
+ className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ aria-label="Filter by Bug ID"
+ >
+ <option value="">All Bugs</option>
+ {[...currentWeekBugs, ...lastWeekBugs].map(bug => (
+ <option key={bug.incidentId} value={bug.incidentId}>{bug.incidentId}</option>
+ ))}
+ </select>
+ </div>
+ <div className="overflow-x-auto">
+ <table className="min-w-full text-sm text-left text-gray-900 bg-white border" style={{ backgroundColor: '#fff' }}>
+ <thead className="bg-gray-100">
+ <tr>
+ {bugFields.map(field => (
+ <th
+ key={field.key}
+ className="px-4 py-2 cursor-pointer"
+ style={{ backgroundColor: '#fff', color: '#222' }}
+ title={field.desc}
+ >
+ {field.label}
+ </th>
+ ))}
+ </tr>
+ </thead>
+ <tbody>
+ {(pieFilter === 'current' ? currentWeekBugs : lastWeekBugs).filter(bug =>
+ bug.correctiveOwner && bug.correctiveOwner.toLowerCase().includes(selectedAssignee.toLowerCase()) &&
+ (
+ (bug.application || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.businessFunction || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.incidentId || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.bugDescription || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.dateReported || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.bugStatus || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.environment || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.rootCause || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.correctiveStatus || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.correctiveOwner || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.lastUpdated || '').toLowerCase().includes(search.toLowerCase())
+ ) &&
+ (statusFilter ? bug.correctiveStatus === statusFilter : true) &&
+ (
+ !assigneeFilter ? true :
+ assigneeFilter === 'Unassigned'
+ ? !bug.correctiveOwner || bug.correctiveOwner === 'Unassigned'
+ : bug.correctiveOwner === assigneeFilter
+ ) &&
+ (environmentFilter ? bug.environment === environmentFilter : true) &&
+ (bugIdFilter ? bug.incidentId === bugIdFilter : true)
+ ).map((bug, idx) => (
+ <tr key={idx} className="border-b" style={{ backgroundColor: '#fff', color: '#222' }}>
+ {bugFields.map(field => (
+ <td key={field.key} className="px-4 py-2" style={{ backgroundColor: '#fff', color: '#222' }}>{
+ field.key === 'incidentId'
+ ? <button className="text-blue-700 underline" onClick={() => { setSelectedBug(bug); setTabValue('tab1'); setSearchResultCount(null); setSearch(""); }}>{bug[field.key]}</button>
+ : bug[field.key]
+ }</td>
+ ))}
+ </tr>
+ ))}
+ {(pieFilter === 'current' ? currentWeekBugs : lastWeekBugs).filter(bug =>
+ bug.correctiveOwner && bug.correctiveOwner.toLowerCase().includes(selectedAssignee.toLowerCase()) &&
+ (
+ (bug.application || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.businessFunction || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.incidentId || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.bugDescription || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.dateReported || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.bugStatus || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.environment || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.rootCause || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.correctiveStatus || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.correctiveOwner || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.lastUpdated || '').toLowerCase().includes(search.toLowerCase())
+ ) &&
+ (statusFilter ? bug.correctiveStatus === statusFilter : true) &&
+ (
+ !assigneeFilter ? true :
+ assigneeFilter === 'Unassigned'
+ ? !bug.correctiveOwner || bug.correctiveOwner === 'Unassigned'
+ : bug.correctiveOwner === assigneeFilter
+ ) &&
+ (environmentFilter ? bug.environment === environmentFilter : true) &&
+ (bugIdFilter ? bug.incidentId === bugIdFilter : true)
+ ).length === 0 && <div className="text-center text-gray-400 py-8">No bugs found.</div>}
+ </tbody>
+ </table>
+ </div>
+ </CardContent>
+ </Card>
+ </div>
+ ) : (
+ <div className="flex flex-col md:flex-row flex-1">
+ {/* Main Dashboard Section */}
+ <div className="flex flex-col items-start w-full md:w-3/4 p-4 md:p-8 bg-white dark:bg-gray-800 shadow-md rounded-lg m-0 md:m-8">
+ <div className="border-b border-gray-200 dark:border-gray-700 w-full mb-4 md:mb-6"></div>
+
+ <Tabs className="w-full mt-2">
+ <TabsWrapper
+  value={tabValue}
+  onValueChange={val => {
+    setTabValue(val);
+    if (val === 'tab2') {
+      setAssigneeFilter('');
+      setStatusFilter('');
+      setEnvironmentFilter('');
+      setBugIdFilter('');
+    }
+  }}
+  className="w-full mt-2"
+>
+ <TabsList className="flex mb-4">
+ <TabsTrigger value="tab1">All Bugs </TabsTrigger>
+ <TabsTrigger value="tab2">Bugs List</TabsTrigger>
+ </TabsList>
+ <TabsContent value="tab1">
+ {/* ITQA Bugs Distribution box only visible in All Bugs tab */}
+ <Card className="p-4 md:p-8 w-full bg-white shadow rounded-lg">
+ <CardContent>
+ <h2 className="text-lg font-bold mb-4 text-black">ITQA Bugs Distribution</h2>
+ <div className="flex gap-4 items-center mb-4">
+ {/* Removed Excel upload input from here */}
+ </div>
+ <div className="flex gap-8 mb-8 justify-evenly w-full">
+  {/* For Current Week Pie Chart: */}
+  <Card className="p-6 flex flex-col items-center w-[420px] bg-white shadow rounded-lg">
+    <h3 className="text-lg font-bold mb-4">Current Week Bugs</h3>
+    <PieChart width={400} height={300}>
+      <Pie
+        data={dataCurrentWeek}
+        cx="50%"
+        cy="50%"
+        labelLine={false}
+        outerRadius={110}
+        innerRadius={55}
+        fill="#8884d8"
+        dataKey="value"
+        nameKey="name"
+        onClick={(_, idx) => {
+          if (idx != null && dataCurrentWeek[idx]) {
+            handlePieClick('current', dataCurrentWeek[idx].name);
+          }
+        }}
+      >
+        {dataCurrentWeek.map((entry, index) => (
+          <Cell key={`cell-${index}`} fill={getOwnerColor(entry.name, index)} />
+        ))}
+      </Pie>
+      <Tooltip content={props => <CustomTooltip {...props} total={dataCurrentWeek.reduce((sum, e) => sum + e.value, 0)} />} />
+    </PieChart>
+    <PieChartLegend data={dataCurrentWeek} total={dataCurrentWeek.reduce((sum, e) => sum + e.value, 0)} />
+  </Card>
+  {/* For Bugs Up to Last Week Pie Chart: */}
+  <Card className="p-6 flex flex-col items-center w-[420px] bg-white shadow rounded-lg">
+    <h3 className="text-lg font-bold mb-4">Bugs Up to Last Week</h3>
+    <PieChart width={400} height={300}>
+      <Pie
+        data={dataLastWeek}
+        cx="50%"
+        cy="50%"
+        labelLine={false}
+        outerRadius={110}
+        innerRadius={55}
+        fill="#8884d8"
+        dataKey="value"
+        nameKey="name"
+        onClick={(_, idx) => {
+          if (idx != null && dataLastWeek[idx]) {
+            handlePieClick('last', dataLastWeek[idx].name);
+          }
+        }}
+      >
+        {dataLastWeek.map((entry, index) => (
+          <Cell key={`cell-${index}`} fill={getOwnerColor(entry.name, index)} />
+        ))}
+      </Pie>
+      <Tooltip content={props => <CustomTooltip {...props} total={dataLastWeek.reduce((sum, e) => sum + e.value, 0)} />} />
+    </PieChart>
+    <PieChartLegend data={dataLastWeek} total={dataLastWeek.reduce((sum, e) => sum + e.value, 0)} />
+  </Card>
+</div>
+ </CardContent>
+ </Card>
+ </TabsContent>
+ <TabsContent value="tab2">
+ {/* Bugs List only visible in Bugs List tab */}
+ <Card className="bg-white dark:bg-gray-800 shadow rounded-lg">
+ <CardContent>
+ <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-blue-100">ITQA Team Bugs</h2>
+ <div className="flex flex-wrap gap-4 mb-4 items-center">
+ <input
+ type="text"
+ value={search}
+ onChange={e => setSearch(e.target.value)}
+ placeholder="Search by text..."
+ className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ aria-label="Search bugs by text"
+ />
+ <select
+ value={statusFilter}
+ onChange={e => setStatusFilter(e.target.value)}
+ className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ aria-label="Filter by corrective action status"
+ >
+ <option value="">All Statuses</option>
+ <option value="Open">Open</option>
+ <option value="Closed">Closed</option>
+ </select>
+ <select
+ value={assigneeFilter}
+ onChange={e => setAssigneeFilter(e.target.value)}
+ className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ aria-label="Filter by assignee"
+ >
+ <option value="">All Assignees</option>
+ <option value="Unassigned">Unassigned</option>
+ <option value="Deva">Deva</option>
+ <option value="Latha">Latha</option>
+ <option value="Shiva">Shiva</option>
+ <option value="Roja">Roja</option>
+ </select>
+ <select
+ value={environmentFilter}
+ onChange={e => setEnvironmentFilter(e.target.value)}
+ className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ aria-label="Filter by environment"
+ >
+ <option value="">All Environments</option>
+ <option value="3 - UAT">3 - UAT</option>
+ <option value="4 - Prod">4 - Prod</option>
+ </select>
+ <select
+ value={bugIdFilter}
+ onChange={e => setBugIdFilter(e.target.value)}
+ className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ aria-label="Filter by Bug ID"
+ >
+ <option value="">All Bugs</option>
+ {[...currentWeekBugs, ...lastWeekBugs].map(bug => (
+ <option key={bug.incidentId} value={bug.incidentId}>{bug.incidentId}</option>
+ ))}
+ </select>
+ </div>
+ <BugTable
+ bugs={[...currentWeekBugs, ...lastWeekBugs]}
+ search={search}
+ statusFilter={statusFilter}
+ assigneeFilter={assigneeFilter}
+ environmentFilter={environmentFilter}
+ bugIdFilter={bugIdFilter}
+ setSelectedBug={setSelectedBug}
+ setTabValue={setTabValue}
+ />
+ </CardContent>
+ </Card>
+ </TabsContent>
+</TabsWrapper>
+
+ </Tabs>
+ </div>
+ {/* Divider and right panel unchanged... */}
+ {/* Right Action Panel */}
+ <div className="hidden md:block w-0.5 bg-gray-200 h-full mx-2"></div>
+ <div className="flex flex-col flex-1 h-full p-4 md:p-8 overflow-x-auto md:overflow-y-auto">
+ {/* Centered Action Boxes */}
+ <div className="flex flex-col items-center justify-center flex-1 gap-8 mx-auto">
+ {/* Upload Excel Button with drag-and-drop and tooltip */}
+ <div
+    className={`w-48 h-48 md:w-56 md:h-56 bg-white border rounded-lg shadow flex flex-col items-center justify-center transition-colors duration-200 ${dragActive ? 'border-4 border-green-400 bg-green-50' : ''}`}
+    onDragOver={handleDragOver}
+    onDragLeave={handleDragLeave}
+    onDrop={handleDrop}
+    aria-label="Upload Excel file (sets Current Week). Drag and drop supported."
+    tabIndex={0}
+  >
+    <div className="mb-2 text-center text-xs text-gray-600 px-3">Upload Excel to set Current Week bugs.</div>
+    <label className="inline-flex items-center px-4 py-2 bg-green-700 text-white rounded cursor-pointer hover:bg-green-800 transition disabled:opacity-60 focus-visible:ring-4 focus-visible:ring-green-300" aria-label="Upload Excel file" tabIndex={0} title="Upload Excel to set Current Week Bugs">
+      <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} disabled={uploadLoading} aria-label="Upload Excel file" tabIndex={0} />
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
+      </svg>
+      {uploadLoading ? <span className="flex items-center"><span className="loader mr-2"></span>Uploading...</span> : "Upload Excel"}
+    </label>
+    <button onClick={clearAllBugs} title="Clear all stored bugs (Current Week and Last Week)" className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"><FaTrash className="inline mr-2" />Clear All Bugs</button>
+    <div className="mt-3 text-center text-xs text-gray-600 px-3" title="Removes both Current Week and Bugs up to Last Week from local storage.">Clear All removes all stored bugs.</div>
+  </div>
+  {/* Extract Bugs Button with tooltip */}
+  <div className="w-48 h-48 md:w-56 md:h-56 bg-white border rounded-lg shadow flex flex-col items-center justify-center" title="Extract and download the Weekly Bugs Summary (Open status only)." aria-label="Download Weekly Bugs Summary" tabIndex={0}>
+    <button
+      onClick={handleSendSummary}
+      className="inline-flex items-center px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 transition disabled:opacity-60 focus-visible:ring-4 focus-visible:ring-blue-300"
+      disabled={extractLoading}
+      aria-label="Download Weekly Bugs Summary"
+      title="Download an Excel with Open bugs for Current Week and Bugs up to Last Week"
+      tabIndex={0}
+    >
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m8 0a4 4 0 11-8 0 4 4 0 018 0zm0 0v4m0-4V8" />
+      </svg>
+      {extractLoading ? <span className="flex items-center"><span className="loader mr-2"></span>Extracting...</span> : "Extract Bugs"}
+    </button>
+    <div className="mt-3 text-center text-xs text-gray-600 px-3">Download Weekly Bugs Summary</div>
+  </div>
+ </div>
+ </div>
+ </div>
+ )}
+ <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
+ <style>{`.loader { border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; } @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+ </div>
+ );
+}
+
+// BugTable component
+function BugTable({ bugs, search, statusFilter, assigneeFilter, environmentFilter, bugIdFilter, setSelectedBug, setTabValue }) {
+ const [sortKey, setSortKey] = useState("id");
+ const [sortAsc, setSortAsc] = useState(true);
+ const [editId, setEditId] = useState(null);
+ const [editValue, setEditValue] = useState("");
+ const [undoBug, setUndoBug] = useState(null);
+ const [undoTimeout, setUndoTimeout] = useState(null);
+ // Filter by search and advanced filters
+ const filtered = bugs.filter(bug =>
+ (
+ (bug.application || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.businessFunction || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.incidentId || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.bugDescription || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.dateReported || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.bugStatus || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.environment || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.rootCause || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.correctiveStatus || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.correctiveOwner || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.lastUpdated || '').toLowerCase().includes(search.toLowerCase())
+ ) &&
+ (statusFilter ? bug.correctiveStatus === statusFilter : true) &&
+ (
+ !assigneeFilter ? true :
+ assigneeFilter === 'Unassigned'
+ ? !bug.correctiveOwner || bug.correctiveOwner === 'Unassigned'
+ : bug.correctiveOwner === assigneeFilter
+ ) &&
+ (environmentFilter ? bug.environment === environmentFilter : true) &&
+ (bugIdFilter ? bug.incidentId === bugIdFilter : true)
+ );
+ // Sort
+ const sorted = [...filtered].sort((a, b) => {
+ if (a[sortKey] < b[sortKey]) return sortAsc ? -1 : 1;
+ if (a[sortKey] > b[sortKey]) return sortAsc ? 1 : -1;
+ return 0;
+ });
+ // Edit handlers (mock)
+ const handleEdit = (id, value) => {
+ setEditId(id);
+ setEditValue(value);
+ };
+ const handleSave = () => {
+ setEditId(null);
+ setEditValue("");
+ toast.success("Bug updated (mock)");
+ };
+ const handleDelete = (id) => {
+ const bugToDelete = bugs.find(b => b.id === id);
+ setBugs(bugs.filter(b => b.id !== id));
+ setUndoBug(bugToDelete);
+ toast(
+ <span>
+ Bug deleted. <button className="underline text-blue-700 ml-2" onClick={handleUndo}>Undo</button>
+ </span>,
+ { autoClose: 4000 }
+ );
+ if (undoTimeout) clearTimeout(undoTimeout);
+ setUndoTimeout(setTimeout(() => setUndoBug(null), 4000));
+ };
+ const handleUndo = () => {
+ if (undoBug) {
+ setBugs([undoBug, ...bugs]);
+ setUndoBug(null);
+ toast.success("Bug restored.");
+ }
+ };
+ return (
+ <div className="overflow-x-auto">
+ <table className="min-w-full text-sm text-left text-gray-900 bg-white border" style={{ backgroundColor: '#fff' }}>
+ <thead className="bg-gray-100">
+ <tr>
+ {bugFields.map(field => (
+ <th
+ key={field.key}
+ className="px-4 py-2 cursor-pointer"
+ style={{ backgroundColor: '#fff', color: '#222' }}
+ title={field.desc}
+ >
+ {field.label}
+ </th>
+ ))}
+ </tr>
+ </thead>
+ <tbody>
+ {filtered.map((bug, idx) => (
+ <tr key={idx} className="border-b" style={{ backgroundColor: '#fff', color: '#222' }}>
+ {bugFields.map(field => (
+ <td key={field.key} className="px-4 py-2" style={{ backgroundColor: '#fff', color: '#222' }}>{
+ field.key === 'incidentId'
+ ? <button className="text-blue-700 underline" onClick={() => { setSelectedBug(bug); setTabValue('tab1'); }}>{bug[field.key]}</button>
+ : bug[field.key]
+ }</td>
+ ))}
+ </tr>
+ ))}
+ {filtered.length === 0 && <tr><td colSpan={bugFields.length} className="text-center text-gray-400 py-8">No bugs found.</td></tr>}
+ </tbody>
+ </table>
+ </div>
+ );
+}
