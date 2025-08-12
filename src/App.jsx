@@ -21,7 +21,32 @@ const OWNER_COLORS = {
 };
 
 // Helper to get color for an owner
-const getOwnerColor = (owner, idx) => OWNER_COLORS[owner] || COLORS[idx % COLORS.length];
+const getOwnerColor = (owner, idx) => {
+  // If owner has a predefined color, use it
+  if (OWNER_COLORS[owner]) {
+    return OWNER_COLORS[owner];
+  }
+  
+  // For new owners, generate a unique color based on their name
+  // This ensures consistent colors for each owner across sessions
+  let hash = 0;
+  for (let i = 0; i < owner.length; i++) {
+    const char = owner.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // Convert to 32-bit integer
+  }
+  
+  // Use different color generation strategies for better uniqueness
+  const hue = Math.abs(hash) % 360;
+  const saturation = 65 + (Math.abs(hash >> 8) % 25); // 65-90%
+  const lightness = 40 + (Math.abs(hash >> 16) % 20); // 40-60%
+  
+  // Add some variation based on name length and characters
+  const nameVariation = owner.length + owner.charCodeAt(0) + owner.charCodeAt(owner.length - 1);
+  const adjustedHue = (hue + (nameVariation % 30)) % 360;
+  
+  return `hsl(${adjustedHue}, ${saturation}%, ${lightness}%)`;
+};
 
 // Custom legend for pie chart (used below each chart)
 function PieChartLegend({ data, total }) {
@@ -173,11 +198,20 @@ function DashboardHeader({ tabValue, setTabValue, darkMode, setDarkMode, search,
 }
 
 export default function BugsDashboard() {
- // Dropdown options at the top
- const applicationOptions = ['GIC', 'Facets', 'ETL', 'EDM'];
- const businessFunctionOptions = ['Batch', 'GIC', 'Cigna', 'OncoHealth'];
- const environmentOptions = ['3 - UAT', '4 - Prod'];
- const rootCauseOptions = [
+ // Dropdown options at the top (now stateful and persisted)
+ const getStoredOptions = (key, fallback) => {
+   try {
+     const raw = localStorage.getItem(key);
+     const parsed = raw ? JSON.parse(raw) : null;
+     return Array.isArray(parsed) && parsed.length > 0 ? parsed : fallback;
+   } catch {
+     return fallback;
+   }
+ };
+ const [applicationOptions, setApplicationOptions] = useState(() => getStoredOptions('options_application', ['GIC', 'Facets', 'ETL', 'EDM']));
+ const [businessFunctionOptions, setBusinessFunctionOptions] = useState(() => getStoredOptions('options_businessFunction', ['Batch', 'GIC', 'Cigna', 'OncoHealth']));
+ const [environmentOptions, setEnvironmentOptions] = useState(() => getStoredOptions('options_environment', ['3 - UAT', '4 - Prod']));
+ const [rootCauseOptions, setRootCauseOptions] = useState(() => getStoredOptions('options_rootCause', [
  'Environment Issue',
  'Test Data Unavailable',
  'Missed QA Test Scenario',
@@ -185,9 +219,17 @@ export default function BugsDashboard() {
  'Not a Valid Bug',
  'Unable to Recreate',
  'Not QA Tested',
- ];
- const correctiveStatusOptions = ['Open', 'Closed'];
- const correctiveOwnerOptions = ['Deva', 'Latha', 'Roja', 'Shiva'];
+ ]));
+ const [correctiveStatusOptions, setCorrectiveStatusOptions] = useState(() => getStoredOptions('options_correctiveStatus', ['Open', 'Closed']));
+ const [correctiveOwnerOptions, setCorrectiveOwnerOptions] = useState(() => getStoredOptions('options_correctiveOwner', ['Deva', 'Latha', 'Roja', 'Shiva']));
+
+// Dropdown open/close states
+const [environmentDropdownOpen, setEnvironmentDropdownOpen] = useState(false);
+const [applicationDropdownOpen, setApplicationDropdownOpen] = useState(false);
+const [businessFunctionDropdownOpen, setBusinessFunctionDropdownOpen] = useState(false);
+const [rootCauseDropdownOpen, setRootCauseDropdownOpen] = useState(false);
+const [correctiveStatusDropdownOpen, setCorrectiveStatusDropdownOpen] = useState(false);
+const [correctiveOwnerDropdownOpen, setCorrectiveOwnerDropdownOpen] = useState(false);
 
  // All useState/useEffect hooks should be here, not at the top level of the file
  const [bugs, setBugs] = useState(getInitialBugs());
@@ -463,7 +505,7 @@ const [previousTab, setPreviousTab] = useState('tab1');
     correctiveOwner: headers.findIndex(h => h && h.toString().toLowerCase().includes('owner')),
   };
   const now = new Date().toLocaleString();
-  const newBugs = json.slice(1).map(row => ({
+   const newBugsRaw = json.slice(1).map(row => ({
     incidentId: row[idx.incidentId]?.toString() || '',
     bugDescription: row[idx.bugDescription]?.toString() || '',
     dateReported: row[idx.dateReported]?.toString() || '',
@@ -476,15 +518,48 @@ const [previousTab, setPreviousTab] = useState('tab1');
     lastUpdated: now,
     comments: [],
   })).filter(bug => bug.incidentId);
-  // Move all existing bugs to lastWeekBugs, set currentWeekBugs to newBugs
-  const allOldBugs = [...currentWeekBugs, ...lastWeekBugs];
+
+   // 1) De-duplicate within the uploaded file itself (by incidentId)
+   const seenInFile = new Set();
+   const newBugsUniqueInFile = newBugsRaw.filter(b => {
+     if (!b.incidentId) return false;
+     if (seenInFile.has(b.incidentId)) return false;
+     seenInFile.add(b.incidentId);
+     return true;
+   });
+
+   // 2) Skip any incidentIds that already exist in the application (current or last week)
+   const existingIds = new Set([
+     ...(Array.isArray(currentWeekBugs) ? currentWeekBugs : []).map(b => b.incidentId),
+     ...(Array.isArray(lastWeekBugs) ? lastWeekBugs : []).map(b => b.incidentId),
+   ]);
+   const filteredNewBugs = newBugsUniqueInFile.filter(b => !existingIds.has(b.incidentId));
+   const skippedCount = newBugsRaw.length - filteredNewBugs.length;
+
+   // If no new bugs, do not move Current Week to Last Week
+   if (filteredNewBugs.length === 0) {
+     if (skippedCount > 0) {
+       toast.info(`No new bugs found. Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'}.`);
+     } else {
+       toast.info('No bugs found in the uploaded file.');
+     }
+     return;
+   }
+
+   // Move all existing bugs to lastWeekBugs, set currentWeekBugs to filtered (non-duplicate) new bugs
+   const allOldBugs = [...(Array.isArray(currentWeekBugs) ? currentWeekBugs : []), ...(Array.isArray(lastWeekBugs) ? lastWeekBugs : [])];
   setLastWeekBugs(allOldBugs);
-  setCurrentWeekBugs(newBugs);
-  setBugs([...newBugs, ...allOldBugs]);
+   setCurrentWeekBugs(filteredNewBugs);
+   setBugs([...filteredNewBugs, ...allOldBugs]);
   // Persist to localStorage
-  localStorage.setItem('currentWeekBugs', JSON.stringify(newBugs));
+   localStorage.setItem('currentWeekBugs', JSON.stringify(filteredNewBugs));
   localStorage.setItem('lastWeekBugs', JSON.stringify(allOldBugs));
+
+   if (skippedCount > 0) {
+     toast.success(`Bugs uploaded! Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'}.`);
+   } else {
   toast.success('Bugs uploaded!');
+   }
 };
 
  // On mount, load from localStorage (do not merge with defaultBugs)
@@ -495,6 +570,35 @@ const [previousTab, setPreviousTab] = useState('tab1');
   setLastWeekBugs(lw);
   setBugs([...cw, ...lw]); // Always set bugs to all bugs on mount
 }, []);
+
+ // Handle clicks outside dropdown to close it
+ useEffect(() => {
+  const handleClickOutside = (event) => {
+    if (environmentDropdownOpen && !event.target.closest('.relative')) {
+      setEnvironmentDropdownOpen(false);
+    }
+    if (applicationDropdownOpen && !event.target.closest('.relative')) {
+      setApplicationDropdownOpen(false);
+    }
+    if (businessFunctionDropdownOpen && !event.target.closest('.relative')) {
+      setBusinessFunctionDropdownOpen(false);
+    }
+    if (rootCauseDropdownOpen && !event.target.closest('.relative')) {
+      setRootCauseDropdownOpen(false);
+    }
+    if (correctiveStatusDropdownOpen && !event.target.closest('.relative')) {
+      setCorrectiveStatusDropdownOpen(false);
+    }
+    if (correctiveOwnerDropdownOpen && !event.target.closest('.relative')) {
+      setCorrectiveOwnerDropdownOpen(false);
+    }
+  };
+
+  document.addEventListener('mousedown', handleClickOutside);
+  return () => {
+    document.removeEventListener('mousedown', handleClickOutside);
+  };
+ }, [environmentDropdownOpen, applicationDropdownOpen, businessFunctionDropdownOpen, rootCauseDropdownOpen, correctiveStatusDropdownOpen, correctiveOwnerDropdownOpen]);
 
  // Pie chart data (group by correctiveOwner)
  const safeCurrentWeekBugs = Array.isArray(currentWeekBugs) ? currentWeekBugs : [];
@@ -585,45 +689,418 @@ const handleNextBug = () => {
  <CardContent>
  <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
  <div>
- <b>Application</b> <select className="border rounded px-2 py-1 w-48" value={editBug.application || ''} onChange={e => setEditBug({ ...editBug, application: e.target.value })}>
-  <option value="" disabled>Select one Option</option>
-  {applicationOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-</select>
+  <b>Application</b>
+  <div className="relative inline-block ml-2">
+    <div
+      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      onClick={() => setApplicationDropdownOpen(!applicationDropdownOpen)}
+    >
+      <span className={editBug.application ? 'text-black' : 'text-gray-500'}>
+        {editBug.application || 'Select one Option'}
+      </span>
+      <span className="text-gray-400">▼</span>
  </div>
- <div><b>Environment</b> <select className="border rounded px-2 py-1 w-48" value={editBug.environment || ''} onChange={e => setEditBug({ ...editBug, environment: e.target.value })}>
-  <option value="" disabled>Select one Option</option>
-  {environmentOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-</select>
+    
+    {applicationDropdownOpen && (
+      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+        {applicationOptions.map(opt => (
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+            <span
+              className="flex-1 cursor-pointer py-1"
+              onClick={() => {
+                setEditBug({ ...editBug, application: opt });
+                setApplicationDropdownOpen(false);
+              }}
+            >
+              {opt}
+            </span>
+            {applicationOptions.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const updatedOptions = applicationOptions.filter(option => option !== opt);
+                  setApplicationOptions(updatedOptions);
+                  try { localStorage.setItem('options_application', JSON.stringify(updatedOptions)); } catch {}
+                  if (editBug.application === opt) {
+                    setEditBug({ ...editBug, application: updatedOptions[0] || '' });
+                  }
+                  toast.success(`Removed "${opt}" from Application options`);
+                }}
+                className="text-red-500 hover:text-red-700 px-1 py-0.5 text-sm"
+                title={`Delete "${opt}"`}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+        <div
+          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          onClick={() => {
+            const input = window.prompt('Enter new Application');
+            const val = (input || '').trim();
+            if (!val) return;
+            if (!applicationOptions.includes(val)) {
+              const next = [...applicationOptions, val];
+              setApplicationOptions(next);
+              try { localStorage.setItem('options_application', JSON.stringify(next)); } catch {}
+              toast.success('Added new Application');
+              setEditBug({ ...editBug, application: val });
+            }
+            setApplicationDropdownOpen(false);
+          }}
+        >
+          + Add new...
+        </div>
+      </div>
+    )}
+  </div>
  </div>
  <div>
- <b>Business Function</b> <select className="border rounded px-2 py-1 w-48" value={editBug.businessFunction} onChange={e => setEditBug({ ...editBug, businessFunction: e.target.value })}>
-  <option value="" disabled>Select one Option</option>
-  {businessFunctionOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-</select>
+  <b>Environment</b>
+  <div className="relative inline-block ml-2">
+    <div
+      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      onClick={() => setEnvironmentDropdownOpen(!environmentDropdownOpen)}
+    >
+      <span className={editBug.environment ? 'text-black' : 'text-gray-500'}>
+        {editBug.environment || 'Select one Option'}
+      </span>
+      <span className="text-gray-400">▼</span>
+    </div>
+    
+    {environmentDropdownOpen && (
+      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+        {environmentOptions.map(opt => (
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+            <span
+              className="flex-1 cursor-pointer py-1"
+              onClick={() => {
+                setEditBug({ ...editBug, environment: opt });
+                setEnvironmentDropdownOpen(false);
+              }}
+            >
+              {opt}
+            </span>
+            {environmentOptions.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const updatedOptions = environmentOptions.filter(option => option !== opt);
+                  setEnvironmentOptions(updatedOptions);
+                  try { localStorage.setItem('options_environment', JSON.stringify(updatedOptions)); } catch {}
+                  if (editBug.environment === opt) {
+                    setEditBug({ ...editBug, environment: updatedOptions[0] || '' });
+                  }
+                  toast.success(`Removed "${opt}" from Environment options`);
+                }}
+                className="text-red-500 hover:text-red-700 px-1 py-0.5 text-sm"
+                title={`Delete "${opt}"`}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+        <div
+          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          onClick={() => {
+            const input = window.prompt('Enter new Environment');
+            const val = (input || '').trim();
+            if (!val) return;
+            if (!environmentOptions.includes(val)) {
+              const next = [...environmentOptions, val];
+              setEnvironmentOptions(next);
+              try { localStorage.setItem('options_environment', JSON.stringify(next)); } catch {}
+              toast.success('Added new Environment');
+              setEditBug({ ...editBug, environment: val });
+            }
+            setEnvironmentDropdownOpen(false);
+          }}
+        >
+          + Add new...
+        </div>
+      </div>
+    )}
+  </div>
  </div>
  <div>
- <b>High Level Root Cause</b> <select className="border rounded px-2 py-1 w-48" value={editBug.rootCause} onChange={e => setEditBug({ ...editBug, rootCause: e.target.value })}>
-  <option value="" disabled>Select one Option</option>
-  {rootCauseOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-</select>
+  <b>Business Function</b>
+  <div className="relative inline-block ml-2">
+    <div
+      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      onClick={() => setBusinessFunctionDropdownOpen(!businessFunctionDropdownOpen)}
+    >
+      <span className={editBug.businessFunction ? 'text-black' : 'text-gray-500'}>
+        {editBug.businessFunction || 'Select one Option'}
+      </span>
+      <span className="text-gray-400">▼</span>
+    </div>
+    
+    {businessFunctionDropdownOpen && (
+      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+        {businessFunctionOptions.map(opt => (
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+            <span
+              className="flex-1 cursor-pointer py-1"
+              onClick={() => {
+                setEditBug({ ...editBug, businessFunction: opt });
+                setBusinessFunctionDropdownOpen(false);
+              }}
+            >
+              {opt}
+            </span>
+            {businessFunctionOptions.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const updatedOptions = businessFunctionOptions.filter(option => option !== opt);
+                  setBusinessFunctionOptions(updatedOptions);
+                  try { localStorage.setItem('options_businessFunction', JSON.stringify(updatedOptions)); } catch {}
+                  if (editBug.businessFunction === opt) {
+                    setEditBug({ ...editBug, businessFunction: updatedOptions[0] || '' });
+                  }
+                  toast.success(`Removed "${opt}" from Business Function options`);
+                }}
+                className="text-red-500 hover:text-red-700 px-1 py-0.5 text-sm"
+                title={`Delete "${opt}"`}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+        <div
+          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          onClick={() => {
+            const input = window.prompt('Enter new Business Function');
+            const val = (input || '').trim();
+            if (!val) return;
+            if (!businessFunctionOptions.includes(val)) {
+              const next = [...businessFunctionOptions, val];
+              setBusinessFunctionOptions(next);
+              try { localStorage.setItem('options_businessFunction', JSON.stringify(next)); } catch {}
+              toast.success('Added new Business Function');
+              setEditBug({ ...editBug, businessFunction: val });
+            }
+            setBusinessFunctionDropdownOpen(false);
+          }}
+        >
+          + Add new...
+        </div>
+      </div>
+    )}
+  </div>
+  </div>
+   <div>
+  <b>High Level Root Cause</b>
+  <div className="relative inline-block ml-2">
+    <div
+      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      onClick={() => setRootCauseDropdownOpen(!rootCauseDropdownOpen)}
+    >
+      <span className={editBug.rootCause ? 'text-black' : 'text-gray-500'}>
+        {editBug.rootCause || 'Select one Option'}
+      </span>
+      <span className="text-gray-400">▼</span>
+    </div>
+    
+    {rootCauseDropdownOpen && (
+      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+        {rootCauseOptions.map(opt => (
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+            <span
+              className="flex-1 cursor-pointer py-1"
+              onClick={() => {
+                setEditBug({ ...editBug, rootCause: opt });
+                setRootCauseDropdownOpen(false);
+              }}
+            >
+              {opt}
+            </span>
+            {rootCauseOptions.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const updatedOptions = rootCauseOptions.filter(option => option !== opt);
+                  setRootCauseOptions(updatedOptions);
+                  try { localStorage.setItem('options_rootCause', JSON.stringify(updatedOptions)); } catch {}
+                  if (editBug.rootCause === opt) {
+                    setEditBug({ ...editBug, rootCause: updatedOptions[0] || '' });
+                  }
+                  toast.success(`Removed "${opt}" from High Level Root Cause options`);
+                }}
+                className="text-red-500 hover:text-red-700 px-1 py-0.5 text-sm"
+                title={`Delete "${opt}"`}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+        <div
+          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          onClick={() => {
+            const input = window.prompt('Enter new High Level Root Cause');
+            const val = (input || '').trim();
+            if (!val) return;
+            if (!rootCauseOptions.includes(val)) {
+              const next = [...rootCauseOptions, val];
+              setRootCauseOptions(next);
+              try { localStorage.setItem('options_rootCause', JSON.stringify(next)); } catch {}
+              toast.success('Added new High Level Root Cause');
+              setEditBug({ ...editBug, rootCause: val });
+            }
+            setRootCauseDropdownOpen(false);
+          }}
+        >
+          + Add new...
+        </div>
+      </div>
+    )}
+  </div>
  </div>
  <div>
  <b>Incident/Bug ID</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.incidentId} readOnly />
  </div>
  <div>
- <b>Corrective Action Status</b> <select className="border rounded px-2 py-1 w-48" value={editBug.correctiveStatus} onChange={e => setEditBug({ ...editBug, correctiveStatus: e.target.value })}>
-  <option value="" disabled>Select one Option</option>
-  {correctiveStatusOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-</select>
+  <b>Corrective Action Status</b>
+  <div className="relative inline-block ml-2">
+    <div
+      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      onClick={() => setCorrectiveStatusDropdownOpen(!correctiveStatusDropdownOpen)}
+    >
+      <span className={editBug.correctiveStatus ? 'text-black' : 'text-gray-500'}>
+        {editBug.correctiveStatus || 'Select one Option'}
+      </span>
+      <span className="text-gray-400">▼</span>
+    </div>
+    
+    {correctiveStatusDropdownOpen && (
+      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+        {correctiveStatusOptions.map(opt => (
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+            <span
+              className="flex-1 cursor-pointer py-1"
+              onClick={() => {
+                setEditBug({ ...editBug, correctiveStatus: opt });
+                setCorrectiveStatusDropdownOpen(false);
+              }}
+            >
+              {opt}
+            </span>
+            {correctiveStatusOptions.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const updatedOptions = correctiveStatusOptions.filter(option => option !== opt);
+                  setCorrectiveStatusOptions(updatedOptions);
+                  try { localStorage.setItem('options_correctiveStatus', JSON.stringify(updatedOptions)); } catch {}
+                  if (editBug.correctiveStatus === opt) {
+                    setEditBug({ ...editBug, correctiveStatus: updatedOptions[0] || '' });
+                  }
+                  toast.success(`Removed "${opt}" from Corrective Action Status options`);
+                }}
+                className="text-red-500 hover:text-red-700 px-1 py-0.5 text-sm"
+                title={`Delete "${opt}"`}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+        <div
+          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          onClick={() => {
+            const input = window.prompt('Enter new Corrective Action Status');
+            const val = (input || '').trim();
+            if (!val) return;
+            if (!correctiveStatusOptions.includes(val)) {
+              const next = [...correctiveStatusOptions, val];
+              setCorrectiveStatusOptions(next);
+              try { localStorage.setItem('options_correctiveStatus', JSON.stringify(next)); } catch {}
+              toast.success('Added new Corrective Action Status');
+              setEditBug({ ...editBug, correctiveStatus: val });
+            }
+            setCorrectiveStatusDropdownOpen(false);
+          }}
+        >
+          + Add new...
+        </div>
+      </div>
+    )}
+  </div>
  </div>
  <div>
  <b>Date Reported</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.dateReported} readOnly />
  </div>
  <div>
- <b>Corrective Action Owner</b> <select className="border rounded px-2 py-1 w-48" value={editBug.correctiveOwner || ''} onChange={e => setEditBug({ ...editBug, correctiveOwner: e.target.value })}>
-  <option value="" disabled>Select one Option</option>
-  {correctiveOwnerOptions.map(opt => <option key={opt} value={opt}>{opt}</option>)}
-</select>
+  <b>Corrective Action Owner</b>
+  <div className="relative inline-block ml-2">
+    <div
+      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      onClick={() => setCorrectiveOwnerDropdownOpen(!correctiveOwnerDropdownOpen)}
+    >
+      <span className={editBug.correctiveOwner ? 'text-black' : 'text-gray-500'}>
+        {editBug.correctiveOwner || 'Select one Option'}
+      </span>
+      <span className="text-gray-400">▼</span>
+    </div>
+    
+    {correctiveOwnerDropdownOpen && (
+      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+        {correctiveOwnerOptions.map(opt => (
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+            <span
+              className="flex-1 cursor-pointer py-1"
+              onClick={() => {
+                setEditBug({ ...editBug, correctiveOwner: opt });
+                setCorrectiveOwnerDropdownOpen(false);
+              }}
+            >
+              {opt}
+            </span>
+            {correctiveOwnerOptions.length > 1 && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  const updatedOptions = correctiveOwnerOptions.filter(option => option !== opt);
+                  setCorrectiveOwnerOptions(updatedOptions);
+                  try { localStorage.setItem('options_correctiveOwner', JSON.stringify(updatedOptions)); } catch {}
+                  if (editBug.correctiveOwner === opt) {
+                    setEditBug({ ...editBug, correctiveOwner: updatedOptions[0] || '' });
+                  }
+                  toast.success(`Removed "${opt}" from Corrective Action Owner options`);
+                }}
+                className="text-red-500 hover:text-red-700 px-1 py-0.5 text-sm"
+                title={`Delete "${opt}"`}
+              >
+                ×
+              </button>
+            )}
+          </div>
+        ))}
+        <div
+          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          onClick={() => {
+            const input = window.prompt('Enter new Corrective Action Owner');
+            const val = (input || '').trim();
+            if (!val) return;
+            if (!correctiveOwnerOptions.includes(val)) {
+              const next = [...correctiveOwnerOptions, val];
+              setCorrectiveOwnerOptions(next);
+              try { localStorage.setItem('options_correctiveOwner', JSON.stringify(next)); } catch {}
+              toast.success('Added new Corrective Action Owner');
+              setEditBug({ ...editBug, correctiveOwner: val });
+            }
+            setCorrectiveOwnerDropdownOpen(false);
+          }}
+        >
+          + Add new...
+        </div>
+      </div>
+    )}
+  </div>
  </div>
  <div>
  <b>Bug Status</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.bugStatus} readOnly />
@@ -720,21 +1197,9 @@ const handleNextBug = () => {
  aria-label="Filter by corrective action status"
  >
  <option value="">All Statuses</option>
- <option value="Open">Open</option>
- <option value="Closed">Closed</option>
- </select>
- <select
- value={assigneeFilter}
- onChange={e => setAssigneeFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
- aria-label="Filter by assignee"
- >
- <option value="">All Assignees</option>
- <option value="Unassigned">Unassigned</option>
- <option value="Deva">Deva</option>
- <option value="Latha">Latha</option>
- <option value="Shiva">Shiva</option>
- <option value="Roja">Roja</option>
+  {correctiveStatusOptions.map(opt => (
+    <option key={opt} value={opt}>{opt}</option>
+  ))}
  </select>
  <select
  value={environmentFilter}
@@ -743,8 +1208,9 @@ const handleNextBug = () => {
  aria-label="Filter by environment"
  >
  <option value="">All Environments</option>
- <option value="3 - UAT">3 - UAT</option>
- <option value="4 - Prod">4 - Prod</option>
+  {environmentOptions.map(opt => (
+    <option key={opt} value={opt}>{opt}</option>
+  ))}
  </select>
  <select
  value={bugIdFilter}
@@ -753,7 +1219,26 @@ const handleNextBug = () => {
  aria-label="Filter by Bug ID"
  >
  <option value="">All Bugs</option>
- {[...currentWeekBugs, ...lastWeekBugs].map(bug => (
+ {(pieFilter === 'current' ? currentWeekBugs : lastWeekBugs)
+   .filter(bug => (
+     (bug.correctiveOwner || '').toLowerCase().includes(selectedAssignee.toLowerCase()) &&
+     (
+       (bug.application || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.businessFunction || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.incidentId || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.bugDescription || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.dateReported || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.bugStatus || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.environment || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.rootCause || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.correctiveStatus || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.correctiveOwner || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.lastUpdated || '').toLowerCase().includes(search.toLowerCase())
+     ) &&
+     (statusFilter ? bug.correctiveStatus === statusFilter : true) &&
+     (environmentFilter ? bug.environment === environmentFilter : true)
+   ))
+   .map(bug => (
  <option key={bug.incidentId} value={bug.incidentId}>{bug.incidentId}</option>
  ))}
  </select>
@@ -955,8 +1440,9 @@ const handleNextBug = () => {
  aria-label="Filter by corrective action status"
  >
  <option value="">All Statuses</option>
- <option value="Open">Open</option>
- <option value="Closed">Closed</option>
+  {correctiveStatusOptions.map(opt => (
+    <option key={opt} value={opt}>{opt}</option>
+  ))}
  </select>
  <select
  value={assigneeFilter}
@@ -966,10 +1452,9 @@ const handleNextBug = () => {
  >
  <option value="">All Assignees</option>
  <option value="Unassigned">Unassigned</option>
- <option value="Deva">Deva</option>
- <option value="Latha">Latha</option>
- <option value="Shiva">Shiva</option>
- <option value="Roja">Roja</option>
+  {correctiveOwnerOptions.map(opt => (
+    <option key={opt} value={opt}>{opt}</option>
+  ))}
  </select>
  <select
  value={environmentFilter}
@@ -978,8 +1463,9 @@ const handleNextBug = () => {
  aria-label="Filter by environment"
  >
  <option value="">All Environments</option>
- <option value="3 - UAT">3 - UAT</option>
- <option value="4 - Prod">4 - Prod</option>
+  {environmentOptions.map(opt => (
+    <option key={opt} value={opt}>{opt}</option>
+  ))}
  </select>
  <select
  value={bugIdFilter}
