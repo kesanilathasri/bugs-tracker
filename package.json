@@ -7,7 +7,9 @@
     "build": "vite build",
     "preview": "vite preview",
     "start": "node server.js",
-    "build:azure": "npm run build && npm start"
+    "postinstall": "npm run build",
+    "azure-start": "npm install && npm run build && npm start",
+    "azure-deploy": "npm ci --only=production && npm run build && npm start"
   },
   "dependencies": {
     "cors": "^2.8.5",
