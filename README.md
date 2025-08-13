@@ -1,6 +1,6 @@
-# Defect Management System (Bug Dashboard)
+# Defect Management System (DMS)
 
-A modern, interactive dashboard for managing software defects/bugs, built with **React**, **Vite**, and **Tailwind CSS**. Visualize, filter, and update bugs with ease using pie charts, tables, and a clean UI.
+A modern, interactive dashboard for managing software defects/bugs, built with **React**, **Vite**, **Node.js**, and **Tailwind CSS**. Visualize, filter, and update bugs with ease using pie charts, tables, and a clean UI. Now with advanced dropdown management, Azure deployment, and enhanced user experience.
 
 ---
 
@@ -17,25 +17,39 @@ A modern, interactive dashboard for managing software defects/bugs, built with *
 - **Accessible**: Keyboard navigation, ARIA labels, and color-blind friendly palette.
 - **Toast Notifications**: User feedback for actions and errors.
 
+### **Advanced Dropdown Management** ✨ **NEW**
+- **Dynamic Options**: Add new values to dropdown lists directly from the UI
+- **In-App Editing**: Modify dropdown options without external configuration
+- **Smart Deletion**: Remove options with individual delete buttons (×) next to each option
+- **Persistent Storage**: All changes saved to localStorage automatically
+- **Real-time Updates**: Filters and dropdowns update dynamically across the application
+
+### **Enhanced User Experience** ✨ **NEW**
+- **Duplicate Prevention**: Smart Excel upload prevents duplicate bug entries
+- **Intelligent Filtering**: Dynamic filters adapt to user-added options
+- **Smart Navigation**: Previous/Next navigation between bugs in owner views
+
 ---
 
 ## 🏗️ Architecture Overview
 
 ```
-[React Frontend] <-> [LocalStorage or Backend API] <-> [Database (future)]
+[React Frontend] <-> [Node.js Backend] <-> [Azure SQL Database]
 - UI: React components (App.jsx, Card, Tabs, etc.)
-- State: useState/useEffect, LocalStorage (for now)
-- Data Import: Excel (xlsx)
-- Visualization: Recharts
+- State: useState/useEffect, LocalStorage (current), Azure SQL (future)
+- Data Import: Excel (xlsx) with duplicate prevention
+- Visualization: Recharts with consistent owner colors
 - Notifications: react-toastify
-- (Future) Backend: Node.js/.NET/Python API
-- (Future) Database: MS SQL Server, etc.
+- Backend: Node.js/Express server (server.js)
+- Database: Azure SQL Database (ready for integration)
+- Deployment: Azure App Service with automatic builds
 ```
 
 ---
 
 ## ⚡ Quick Start
 
+### **Local Development**
 1. **Install dependencies**
    ```bash
    npm install
@@ -47,32 +61,54 @@ A modern, interactive dashboard for managing software defects/bugs, built with *
    ```
    Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-3. **Build for production**
+3. **Test full-stack locally**
    ```bash
    npm run build
-   npm run preview
+   npm start
    ```
+   Open [http://localhost:8080](http://localhost:8080) in your browser.
+
+### **Azure Deployment** ✨ **NEW**
+1. **Build and deploy**
+   ```bash
+   npm run azure-deploy
+   ```
+
+2. **Azure App Service** automatically:
+   - Installs dependencies
+   - Builds the React app
+   - Starts the Node.js server
+   - Serves your application
 
 ---
 
 ## 🗂️ Project Structure
 
 ```
-src/
-├── App.jsx              # Main dashboard logic and UI
-├── main.jsx             # React entry point
-├── index.css            # Tailwind and custom styles
-└── components/
-    └── ui/
-        ├── button.jsx   # Reusable Button component
-        ├── card.jsx     # Card layout component
-        └── tabs.jsx     # Tabs, TabList, TabTrigger, etc.
+bug-dashboard-app/
+├── src/                 # React frontend source code
+│   ├── App.jsx         # Main dashboard logic and UI
+│   ├── main.jsx        # React entry point
+│   ├── index.css       # Tailwind and custom styles
+│   └── components/
+│       └── ui/
+│           ├── button.jsx   # Reusable Button component
+│           ├── card.jsx     # Card layout component
+│           └── tabs.jsx     # Tabs, TabList, TabTrigger, etc.
+├── server.js            # Node.js/Express backend server
+├── package.json         # Dependencies and scripts
+├── vite.config.js       # Vite configuration
+├── tailwind.config.js   # Tailwind CSS configuration
+├── .deployment          # Azure deployment configuration
+├── .gitignore           # Git ignore rules
+└── .gitattributes       # Git line ending rules
 ```
 
 ---
 
 ## 🛠️ Technologies Used
 
+### **Frontend**
 - **React** (with hooks)
 - **Vite** (fast dev/build tool)
 - **Tailwind CSS** (utility-first styling)
@@ -80,7 +116,17 @@ src/
 - **react-icons** (FontAwesome icons)
 - **react-toastify** (notifications)
 - **xlsx** (Excel import)
-- **LocalStorage** (for now; ready for backend integration)
+
+### **Backend & Infrastructure** ✨ **NEW**
+- **Node.js** (v22.x LTS)
+- **Express.js** (web server framework)
+- **CORS** (cross-origin resource sharing)
+- **Azure App Service** (hosting platform)
+- **Azure SQL Database** (ready for integration)
+
+### **Data Storage**
+- **LocalStorage** (current implementation)
+- **Azure SQL** (production ready)
 
 ---
 
@@ -92,16 +138,42 @@ src/
 - **Edit Bugs**: Click a Bug ID to view/edit details, add comments, and update fields.
 - **Clear All**: Remove all bugs and start fresh.
 
+### **Advanced Features** ✨ **NEW**
+- **Dynamic Dropdowns**: Add new options to any dropdown field directly from the UI
+- **Smart Deletion**: Remove dropdown options with individual delete buttons
+- **Duplicate Prevention**: Excel uploads automatically prevent duplicate bug entries
+- **Intelligent Filters**: All filters dynamically adapt to user-added options
+- **Real-time Updates**: Changes to options immediately reflect across the application
+
 ---
 
 ## 🧩 Extension Guide
 
-**To add a backend (Node.js, .NET, etc.):**
-1. Scaffold a backend API project (Node.js/Express, .NET Web API, etc.).
-2. Implement endpoints for CRUD operations on bugs (GET, POST, PUT, DELETE).
-3. Connect your backend to a database (e.g., MS SQL Server).
-4. Replace LocalStorage logic in `App.jsx` with API calls using `fetch` or `axios`.
-5. Update deployment scripts and environment variables as needed.
+### **Backend Integration** ✨ **COMPLETED**
+✅ **Node.js/Express backend** already implemented in `server.js`
+✅ **Azure deployment** configured and ready
+✅ **Database ready** for Azure SQL integration
+
+**To connect to Azure SQL Database:**
+1. Create Azure SQL Database instance
+2. Update connection strings in `server.js`
+3. Replace LocalStorage calls with database queries
+4. Deploy to Azure App Service
+
+### **Advanced Dropdown Management** ✨ **NEW**
+**How the dynamic dropdowns work:**
+1. **Add New Options**: Select "+ Add new..." from any dropdown
+2. **Smart Deletion**: Click × button next to any option to remove it
+3. **Real-time Updates**: All filters automatically adapt to new options
+4. **Persistent Storage**: Changes saved to localStorage automatically
+
+**Supported Fields:**
+- Application
+- Business Function
+- Environment
+- High Level Root Cause
+- Corrective Action Status
+- Corrective Action Owner
 
 **To add new fields:**
 1. Add the field to `bugFields` in `App.jsx`.
@@ -128,20 +200,45 @@ src/
 
 ## 🧑‍💻 Development Workflow
 
+### **Frontend Development**
 1. Edit JSX/JS files (like `App.jsx`)
 2. Save changes
 3. Vite reloads the browser automatically
+
+### **Backend Development** ✨ **NEW**
+1. Edit `server.js` for API changes
+2. Test locally with `npm start`
+3. Deploy to Azure with Git push
+
+### **Azure Deployment Workflow** ✨ **NEW**
+1. **Local Development**: `npm run dev` (frontend only)
+2. **Full-Stack Testing**: `npm run build && npm start`
+3. **Azure Deployment**: Push to GitHub → Azure auto-deploys
+4. **Production**: Azure runs `npm start` automatically
 
 ---
 
 ## 🐞 Troubleshooting
 
+### **Local Development Issues**
 - **Node.js/npm not found**: Add Node.js to your PATH or run:
   ```powershell
   $env:PATH += ";C:\Program Files\nodejs"
   ```
 - **Dependencies missing**: Run `npm install`
 - **Port in use**: Run `npm run dev -- --port 3000`
+
+### **Azure Deployment Issues** ✨ **NEW**
+- **"express is not defined"**: Ensure `server.js` has proper imports
+- **Port 8080 not responding**: Check Azure App Service configuration
+- **Build failures**: Verify `package.json` scripts are correct
+- **Module errors**: Ensure all dependencies are in `package.json`
+
+### **Common Solutions**
+- **Restart App Service** if deployment fails
+- **Check deployment logs** in Azure Portal
+- **Verify startup command** is `npm start`
+- **Set Node.js version** to `22.x` in Azure
 
 ---
 
