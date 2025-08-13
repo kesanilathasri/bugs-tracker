@@ -2,11 +2,12 @@
   "name": "bug-dashboard-app",
   "private": true,
   "version": "0.0.0",
-  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "start": "node server.js",
+    "build:azure": "npm run build && npm start"
   },
   "dependencies": {
     "cors": "^2.8.5",
