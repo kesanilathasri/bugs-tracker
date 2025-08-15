@@ -1,6 +1,6 @@
 # Defect Management System (DMS)
 
-A modern, interactive dashboard for managing software defects/bugs, built with **React**, **Vite**, **Node.js**, and **Tailwind CSS**. Visualize, filter, and update bugs with ease using pie charts, tables, and a clean UI. Now with advanced dropdown management, Azure deployment, and enhanced user experience.
+A modern, interactive dashboard for managing software defects/bugs, built with **React**, **Vite**, and **Tailwind CSS**. Visualize, filter, and update bugs with ease using pie charts, tables, and a clean UI. Now with advanced dropdown management, Azure deployment, and enhanced user experience.
 
 ---
 
@@ -40,7 +40,7 @@ A modern, interactive dashboard for managing software defects/bugs, built with *
 - Data Import: Excel (xlsx) with duplicate prevention
 - Visualization: Recharts with consistent owner colors
 - Notifications: react-toastify
-- Backend: Node.js/Express server (server.js)
+- Backend: None (Local Storage only)
 - Database: Azure SQL Database (ready for integration)
 - Deployment: Azure App Service with automatic builds
 ```
@@ -61,12 +61,11 @@ A modern, interactive dashboard for managing software defects/bugs, built with *
    ```
    Open [http://localhost:5173](http://localhost:5173) in your browser.
 
-3. **Test full-stack locally**
+3. **Build for production**
    ```bash
    npm run build
-   npm start
    ```
-   Open [http://localhost:8080](http://localhost:8080) in your browser.
+   The built files will be in the `dist/` folder.
 
 ### **Azure Deployment** ✨ **NEW**
 1. **Build and deploy**
@@ -77,8 +76,7 @@ A modern, interactive dashboard for managing software defects/bugs, built with *
 2. **Azure App Service** automatically:
    - Installs dependencies
    - Builds the React app
-   - Starts the Node.js server
-   - Serves your application
+   - Serves static files from dist/ folder
 
 ---
 
@@ -95,7 +93,7 @@ bug-dashboard-app/
 │           ├── button.jsx   # Reusable Button component
 │           ├── card.jsx     # Card layout component
 │           └── tabs.jsx     # Tabs, TabList, TabTrigger, etc.
-├── server.js            # Node.js/Express backend server
+├── web.config           # IIS configuration for static files
 ├── package.json         # Dependencies and scripts
 ├── vite.config.js       # Vite configuration
 ├── tailwind.config.js   # Tailwind CSS configuration
@@ -117,12 +115,10 @@ bug-dashboard-app/
 - **react-toastify** (notifications)
 - **xlsx** (Excel import)
 
-### **Backend & Infrastructure** ✨ **NEW**
-- **Node.js** (v22.x LTS)
-- **Express.js** (web server framework)
-- **CORS** (cross-origin resource sharing)
+### **Infrastructure** ✨ **NEW**
 - **Azure App Service** (hosting platform)
 - **Azure SQL Database** (ready for integration)
+- **Static Web App** deployment
 
 ### **Data Storage**
 - **LocalStorage** (current implementation)
@@ -150,13 +146,13 @@ bug-dashboard-app/
 ## 🧩 Extension Guide
 
 ### **Backend Integration** ✨ **COMPLETED**
-✅ **Node.js/Express backend** already implemented in `server.js`
+✅ **Frontend-only architecture** using Local Storage for data persistence
 ✅ **Azure deployment** configured and ready
 ✅ **Database ready** for Azure SQL integration
 
 **To connect to Azure SQL Database:**
 1. Create Azure SQL Database instance
-2. Update connection strings in `server.js`
+2. Update connection strings in Azure configuration
 3. Replace LocalStorage calls with database queries
 4. Deploy to Azure App Service
 
@@ -205,16 +201,16 @@ bug-dashboard-app/
 2. Save changes
 3. Vite reloads the browser automatically
 
-### **Backend Development** ✨ **NEW**
-1. Edit `server.js` for API changes
-2. Test locally with `npm start`
+### **Frontend Development** ✨ **NEW**
+1. Edit React components for frontend changes
+2. Test locally with `npm run dev`
 3. Deploy to Azure with Git push
 
 ### **Azure Deployment Workflow** ✨ **NEW**
 1. **Local Development**: `npm run dev` (frontend only)
-2. **Full-Stack Testing**: `npm run build && npm start`
+2. **Production Build**: `npm run build` (creates dist/ folder)
 3. **Azure Deployment**: Push to GitHub → Azure auto-deploys
-4. **Production**: Azure runs `npm start` automatically
+4. **Production**: Azure serves static files from dist/ folder
 
 ---
 
@@ -229,7 +225,7 @@ bug-dashboard-app/
 - **Port in use**: Run `npm run dev -- --port 3000`
 
 ### **Azure Deployment Issues** ✨ **NEW**
-- **"express is not defined"**: Ensure `server.js` has proper imports
+- **"express is not defined"**: Not applicable (frontend-only app)
 - **Port 8080 not responding**: Check Azure App Service configuration
 - **Build failures**: Verify `package.json` scripts are correct
 - **Module errors**: Ensure all dependencies are in `package.json`
@@ -237,8 +233,8 @@ bug-dashboard-app/
 ### **Common Solutions**
 - **Restart App Service** if deployment fails
 - **Check deployment logs** in Azure Portal
-- **Verify startup command** is `npm start`
-- **Set Node.js version** to `22.x` in Azure
+- **Verify startup command** is empty (no command)
+- **Set WEBSITE_NODE_DEFAULT_VERSION** to `0` in Azure
 
 ---
 
