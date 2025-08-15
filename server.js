@@ -1,9 +1,13 @@
  
 import express from 'express';
-import path from 'path';
+import path, { dirname } from 'path';
 import cors from 'cors';
 import { fileURLToPath } from 'url';
-import { dirname } from 'path';
+
+
+// Get __dirname equivalent for ES modules
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
 
 const app = express();
 const port = process.env.PORT || 8080;
@@ -11,10 +15,6 @@ const port = process.env.PORT || 8080;
 // Middleware
 app.use(cors());
 app.use(express.json());
-
-// Get __dirname equivalent for ES modules
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
 
 // Serve static files from the dist folder (after build)
 app.use(express.static(path.join(__dirname, 'dist')));
@@ -25,7 +25,7 @@ app.get('/health', (req, res) => {
         status: 'OK', 
         message: 'Bug Dashboard is running!',
         timestamp: new Date().toISOString(),
-        port: PORT,
+        port: port,
         environment: process.env.NODE_ENV || 'development'
     });
 });
@@ -46,9 +46,6 @@ app.get('*', (req, res) => {
 
 app.listen(port, () => {
     console.log(`Server running on port ${port}`);
-    console.log(`App accessible at: http://localhost:${port}`);
-    console.log(`Environment: ${process.env.NODE_ENV || 'development'}`);
-    console.log(`Process ID: ${process.pid}`);
 });
 
 // Handle process termination gracefully

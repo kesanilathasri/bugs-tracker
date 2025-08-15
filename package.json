@@ -1,35 +1,29 @@
 {
   "name": "bug-dashboard-app",
   "private": true,
-  "version": "0.0.0",
+  "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
+    "serve": "node server.js",
     "start": "node server.js",
-    "postinstall": "npm run build",
-    "azure-start": "npm install && npm run build && npm start",
-    "azure-deploy": "npm ci --only=production && npm run build && npm start"
+    "postinstall": "npm run build"
   },
-  "dependencies": {
-    "cors": "^2.8.5",
-    "dotenv": "^17.2.1",
-    "express": "^5.1.0",
-    "heroicons": "^2.2.0",
-    "react": "^18.2.0",
-    "react-dom": "^18.2.0",
-    "react-icons": "^5.5.0",
-    "react-toastify": "^11.0.5",
-    "recharts": "^2.8.0",
-    "sequelize": "^6.37.7",
-    "tedious": "^18.6.1",
-    "xlsx": "^0.18.5"
-  },
+      "dependencies": {
+      "react": "^18.2.0",
+      "react-dom": "^18.2.0",
+      "react-icons": "^5.5.0",
+      "react-toastify": "^11.0.5",
+      "recharts": "^2.8.0",
+      "xlsx": "^0.18.5"
+    },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.3",
     "autoprefixer": "^10.4.14",
     "postcss": "^8.4.24",
     "tailwindcss": "^3.3.0",
-    "vite": "^4.4.5"
+    "vite": "^4.5.14"
   }
 }

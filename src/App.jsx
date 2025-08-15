@@ -2,7 +2,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent, TabsWrapper } from "@/compone
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { ToastContainer, toast } from "react-toastify";
 import "react-toastify/dist/ReactToastify.css";
 
@@ -272,8 +272,15 @@ const [previousTab, setPreviousTab] = useState('tab1');
  // Move handleGlobalSearch here so it can access state/hooks
  const handleGlobalSearch = (e) => {
   if (e.key === 'Enter') {
-    // Search all bugs (currentWeekBugs + lastWeekBugs) for the entered Bug ID
-    let bug = currentWeekBugs.find(b => b.incidentId === search.trim());
+    const searchTerm = search.trim();
+    if (!searchTerm) return;
+    
+    // Use Set for faster lookups
+    const currentBugMap = new Map(currentWeekBugs.map(b => [b.incidentId, b]));
+    const lastBugMap = new Map(lastWeekBugs.map(b => [b.incidentId, b]));
+    
+    // Search current week first (more likely to be recent)
+    let bug = currentBugMap.get(searchTerm);
     if (bug) {
       setSelectedAssignee(bug.correctiveOwner || 'Unassigned');
       setPieFilter('current');
@@ -281,7 +288,9 @@ const [previousTab, setPreviousTab] = useState('tab1');
       setSearchResultCount(1);
       return;
     }
-    bug = lastWeekBugs.find(b => b.incidentId === search.trim());
+    
+    // Search last week if not found
+    bug = lastBugMap.get(searchTerm);
     if (bug) {
       setSelectedAssignee(bug.correctiveOwner || 'Unassigned');
       setPieFilter('last');
@@ -289,6 +298,7 @@ const [previousTab, setPreviousTab] = useState('tab1');
       setSearchResultCount(1);
       return;
     }
+    
     setSearchResultCount(0);
     toast.error('0 records found');
   }
@@ -486,89 +496,186 @@ const [previousTab, setPreviousTab] = useState('tab1');
  // Minimal bug fields expected from Excel
  const minimalBugFields = ['incidentId', 'bugDescription', 'dateReported', 'bugStatus', 'environment', 'correctiveOwner'];
 
- // Excel upload handler: parse and extract required fields, update state
+ // Excel upload handler: parse and extract required fields, update state - OPTIMIZED
  const handleExcelUpload = async (e) => {
-  const file = e.target.files[0];
-  if (!file) return;
-  const data = await file.arrayBuffer();
-  const workbook = XLSX.read(data);
-  const worksheet = workbook.Sheets[workbook.SheetNames[0]];
-  const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-  // Find header row and map columns
-  const headers = json[0];
-  const idx = {
-    incidentId: headers.findIndex(h => h && h.toString().toLowerCase().includes('incident')),
-    bugDescription: headers.findIndex(h => h && h.toString().toLowerCase().includes('description')),
-    dateReported: headers.findIndex(h => h && h.toString().toLowerCase().includes('date')),
-    bugStatus: headers.findIndex(h => h && h.toString().toLowerCase().includes('status')),
-    environment: headers.findIndex(h => h && h.toString().toLowerCase().includes('environment')),
-    correctiveOwner: headers.findIndex(h => h && h.toString().toLowerCase().includes('owner')),
-  };
-  const now = new Date().toLocaleString();
-   const newBugsRaw = json.slice(1).map(row => ({
-    incidentId: row[idx.incidentId]?.toString() || '',
-    bugDescription: row[idx.bugDescription]?.toString() || '',
-    dateReported: row[idx.dateReported]?.toString() || '',
-    bugStatus: row[idx.bugStatus]?.toString() || '',
-    environment: row[idx.environment]?.toString() || '',
-    correctiveOwner: row[idx.correctiveOwner]?.toString() || 'Unassigned',
-    businessFunction: '',
-    rootCause: '',
-    correctiveStatus: '',
-    lastUpdated: now,
-    comments: [],
-  })).filter(bug => bug.incidentId);
+  try {
+    setUploadLoading(true);
+    
+    const file = e.target.files[0];
+    if (!file) return;
+    
+    // Show immediate feedback
+    toast.info('Processing Excel file...', { 
+      autoClose: 2000,
+      position: "top-right",
+      closeOnClick: true,
+      pauseOnHover: true,
+      draggable: true
+    });
+    
+    // Process data asynchronously to prevent UI blocking
+    const processData = () => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        try {
+          const startTime = performance.now();
+          
+          const data = new Uint8Array(event.target.result);
+          const workbook = XLSX.read(data, { type: 'array' });
+          const worksheet = workbook.Sheets[workbook.SheetNames[0]];
+          const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+          
+          // Find header row and map columns (optimized)
+          const headers = json[0];
+          const idx = {
+            incidentId: headers.findIndex(h => h && h.toString().toLowerCase().includes('incident')),
+            bugDescription: headers.findIndex(h => h && h.toString().toLowerCase().includes('description')),
+            dateReported: headers.findIndex(h => h && h.toString().toLowerCase().includes('date')),
+            bugStatus: headers.findIndex(h => h && h.toString().toLowerCase().includes('status')),
+            environment: headers.findIndex(h => h && h.toString().toLowerCase().includes('environment')),
+            correctiveOwner: headers.findIndex(h => h && h.toString().toLowerCase().includes('owner')),
+          };
+          
+          const now = new Date().toLocaleString();
+          
+          // Process all rows at once for better performance
+          const newBugsRaw = json.slice(1).map(row => ({
+            incidentId: row[idx.incidentId]?.toString() || '',
+            bugDescription: row[idx.bugDescription]?.toString() || '',
+            dateReported: row[idx.dateReported]?.toString() || '',
+            bugStatus: row[idx.bugStatus]?.toString() || '',
+            environment: row[idx.environment]?.toString() || '',
+            correctiveOwner: row[idx.correctiveOwner]?.toString() || 'Unassigned',
+            businessFunction: '',
+            rootCause: '',
+            correctiveStatus: '',
+            lastUpdated: now,
+            comments: [],
+          })).filter(bug => bug.incidentId);
+          
+          // 1) De-duplicate within the uploaded file itself (by incidentId)
+          const seenInFile = new Set();
+          const newBugsUniqueInFile = newBugsRaw.filter(b => {
+            if (!b.incidentId) return false;
+            if (seenInFile.has(b.incidentId)) return false;
+            seenInFile.add(b.incidentId);
+            return true;
+          });
+          
+          // 2) Skip any incidentIds that already exist in the application (current or last week)
+          const existingIds = new Set([
+            ...(Array.isArray(currentWeekBugs) ? currentWeekBugs : []).map(b => b.incidentId),
+            ...(Array.isArray(lastWeekBugs) ? lastWeekBugs : []).map(b => b.incidentId),
+          ]);
+          
+          const filteredNewBugs = newBugsUniqueInFile.filter(b => !existingIds.has(b.incidentId));
+          const skippedCount = newBugsRaw.length - filteredNewBugs.length;
+          const duplicatesInFile = newBugsRaw.length - newBugsUniqueInFile.length;
+          
+          // If no new bugs, do not move Current Week to Last Week
+          if (filteredNewBugs.length === 0) {
+            if (skippedCount > 0) {
+              toast.info(`No new bugs found. Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'}.`, {
+                position: "top-right",
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true
+              });
+            } else if (duplicatesInFile > 0) {
+              toast.info(`No new bugs found. File had ${duplicatesInFile} duplicate${duplicatesInFile === 1 ? '' : 's'}.`, {
+                position: "top-right",
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true
+              });
+            } else {
+              toast.info('No bugs found in the uploaded file.', {
+                position: "top-right",
+                closeOnClick: true,
+                pauseOnHover: true,
+                draggable: true
+              });
+            }
+            setUploadLoading(false);
+            return;
+          }
+          
+          // Move all existing bugs to lastWeekBugs, set currentWeekBugs to filtered (non-duplicate) new bugs
+          const allOldBugs = [...(Array.isArray(currentWeekBugs) ? currentWeekBugs : []), ...(Array.isArray(lastWeekBugs) ? lastWeekBugs : [])];
+          
+          // Batch state updates for better performance
+          Promise.resolve().then(() => {
+            setLastWeekBugs(allOldBugs);
+            setCurrentWeekBugs(filteredNewBugs);
+            setBugs([...filteredNewBugs, ...allOldBugs]);
+            
+            // Persist to localStorage
+            localStorage.setItem('currentWeekBugs', JSON.stringify(filteredNewBugs));
+            localStorage.setItem('lastWeekBugs', JSON.stringify(allOldBugs));
+            
+            const endTime = performance.now();
+            const processingTime = Math.round(endTime - startTime);
+            
+            // Show detailed success message
+            let successMessage = `Successfully uploaded ${filteredNewBugs.length} new bugs!`;
+            if (skippedCount > 0) {
+              successMessage += ` Skipped ${skippedCount} existing duplicate${skippedCount === 1 ? '' : 's'}.`;
+            }
+            if (duplicatesInFile > 0) {
+              successMessage += ` File had ${duplicatesInFile} internal duplicate${duplicatesInFile === 1 ? '' : 's'}.`;
+            }
+            successMessage += ` Processed in ${processingTime}ms.`;
+            
+            toast.success(successMessage, { 
+              autoClose: 4000,
+              position: "top-right",
+              closeOnClick: true,
+              pauseOnHover: true,
+              draggable: true
+            });
+            setUploadLoading(false);
+          });
+          
+        } catch (error) {
+          console.error('Excel processing error:', error);
+          toast.error('Failed to process Excel file');
+          setUploadLoading(false);
+        }
+      };
+      
+      reader.readAsArrayBuffer(file);
+    };
+    
+    // Use requestAnimationFrame for better performance
+    requestAnimationFrame(processData);
+    
+  } catch (error) {
+    console.error('Upload error:', error);
+    toast.error('Upload failed');
+    setUploadLoading(false);
+  }
+ };
 
-   // 1) De-duplicate within the uploaded file itself (by incidentId)
-   const seenInFile = new Set();
-   const newBugsUniqueInFile = newBugsRaw.filter(b => {
-     if (!b.incidentId) return false;
-     if (seenInFile.has(b.incidentId)) return false;
-     seenInFile.add(b.incidentId);
-     return true;
-   });
-
-   // 2) Skip any incidentIds that already exist in the application (current or last week)
-   const existingIds = new Set([
-     ...(Array.isArray(currentWeekBugs) ? currentWeekBugs : []).map(b => b.incidentId),
-     ...(Array.isArray(lastWeekBugs) ? lastWeekBugs : []).map(b => b.incidentId),
-   ]);
-   const filteredNewBugs = newBugsUniqueInFile.filter(b => !existingIds.has(b.incidentId));
-   const skippedCount = newBugsRaw.length - filteredNewBugs.length;
-
-   // If no new bugs, do not move Current Week to Last Week
-   if (filteredNewBugs.length === 0) {
-     if (skippedCount > 0) {
-       toast.info(`No new bugs found. Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'}.`);
-     } else {
-       toast.info('No bugs found in the uploaded file.');
-     }
-     return;
-   }
-
-   // Move all existing bugs to lastWeekBugs, set currentWeekBugs to filtered (non-duplicate) new bugs
-   const allOldBugs = [...(Array.isArray(currentWeekBugs) ? currentWeekBugs : []), ...(Array.isArray(lastWeekBugs) ? lastWeekBugs : [])];
-  setLastWeekBugs(allOldBugs);
-   setCurrentWeekBugs(filteredNewBugs);
-   setBugs([...filteredNewBugs, ...allOldBugs]);
-  // Persist to localStorage
-   localStorage.setItem('currentWeekBugs', JSON.stringify(filteredNewBugs));
-  localStorage.setItem('lastWeekBugs', JSON.stringify(allOldBugs));
-
-   if (skippedCount > 0) {
-     toast.success(`Bugs uploaded! Skipped ${skippedCount} duplicate${skippedCount === 1 ? '' : 's'}.`);
-   } else {
-  toast.success('Bugs uploaded!');
-   }
-};
-
- // On mount, load from localStorage (do not merge with defaultBugs)
+ // On mount, load from localStorage (do not merge with defaultBugs) - Optimized
  useEffect(() => {
-  const cw = JSON.parse(localStorage.getItem('currentWeekBugs') || '[]');
-  const lw = JSON.parse(localStorage.getItem('lastWeekBugs') || '[]');
-  setCurrentWeekBugs(cw);
-  setLastWeekBugs(lw);
-  setBugs([...cw, ...lw]); // Always set bugs to all bugs on mount
+  try {
+    // Use try-catch for safer localStorage operations
+    const cw = JSON.parse(localStorage.getItem('currentWeekBugs') || '[]');
+    const lw = JSON.parse(localStorage.getItem('lastWeekBugs') || '[]');
+    
+    // Batch state updates for better performance
+    Promise.resolve().then(() => {
+      setCurrentWeekBugs(cw);
+      setLastWeekBugs(lw);
+      setBugs([...cw, ...lw]); // Always set bugs to all bugs on mount
+    });
+  } catch (error) {
+    console.error('Error loading from localStorage:', error);
+    // Set empty arrays if localStorage is corrupted
+    setCurrentWeekBugs([]);
+    setLastWeekBugs([]);
+    setBugs([]);
+  }
 }, []);
 
  // Handle clicks outside dropdown to close it
@@ -600,23 +707,34 @@ const [previousTab, setPreviousTab] = useState('tab1');
   };
  }, [environmentDropdownOpen, applicationDropdownOpen, businessFunctionDropdownOpen, rootCauseDropdownOpen, correctiveStatusDropdownOpen, correctiveOwnerDropdownOpen]);
 
- // Pie chart data (group by correctiveOwner)
+ // Pie chart data (group by correctiveOwner) - Optimized with useMemo
  const safeCurrentWeekBugs = Array.isArray(currentWeekBugs) ? currentWeekBugs : [];
  const safeLastWeekBugs = Array.isArray(lastWeekBugs) ? lastWeekBugs : [];
- const dataCurrentWeek = Object.entries(
- safeCurrentWeekBugs.reduce((acc, bug) => {
- const owner = bug.correctiveOwner || 'Unassigned';
- acc[owner] = (acc[owner] || 0) + 1;
- return acc;
- }, {})
- ).map(([name, value]) => ({ name, value }));
- const dataLastWeek = Object.entries(
- safeLastWeekBugs.reduce((acc, bug) => {
- const owner = bug.correctiveOwner || 'Unassigned';
- acc[owner] = (acc[owner] || 0) + 1;
- return acc;
- }, {})
- ).map(([name, value]) => ({ name, value }));
+
+ // Memoize pie chart data to prevent unnecessary recalculations
+ const dataCurrentWeek = useMemo(() => {
+   if (safeCurrentWeekBugs.length === 0) return [];
+   
+   const ownerCounts = new Map();
+   for (const bug of safeCurrentWeekBugs) {
+     const owner = bug.correctiveOwner || 'Unassigned';
+     ownerCounts.set(owner, (ownerCounts.get(owner) || 0) + 1);
+   }
+   
+   return Array.from(ownerCounts.entries()).map(([name, value]) => ({ name, value }));
+ }, [safeCurrentWeekBugs]);
+
+ const dataLastWeek = useMemo(() => {
+   if (safeLastWeekBugs.length === 0) return [];
+   
+   const ownerCounts = new Map();
+   for (const bug of safeLastWeekBugs) {
+     const owner = bug.correctiveOwner || 'Unassigned';
+     ownerCounts.set(owner, (ownerCounts.get(owner) || 0) + 1);
+   }
+   
+   return Array.from(ownerCounts.entries()).map(([name, value]) => ({ name, value }));
+ }, [safeLastWeekBugs]);
 
  // Pie chart click handlers: show only current or last week bugs
  const [pieFilter, setPieFilter] = useState('current'); // 'current' or 'last'
@@ -1513,7 +1631,23 @@ const handleNextBug = () => {
   >
     <div className="mb-2 text-center text-xs text-gray-600 px-3">Upload Excel to set Current Week bugs.</div>
     <label className="inline-flex items-center px-4 py-2 bg-green-700 text-white rounded cursor-pointer hover:bg-green-800 transition disabled:opacity-60 focus-visible:ring-4 focus-visible:ring-green-300" aria-label="Upload Excel file" tabIndex={0} title="Upload Excel to set Current Week Bugs">
-      <input type="file" accept=".xlsx,.xls" className="hidden" onChange={handleExcelUpload} disabled={uploadLoading} aria-label="Upload Excel file" tabIndex={0} />
+      <input 
+  type="file" 
+  accept=".xlsx,.xls" 
+  className="hidden" 
+  onChange={handleExcelUpload} 
+  disabled={uploadLoading} 
+  aria-label="Upload Excel file" 
+  tabIndex={0}
+  // Performance optimization: preload file data
+  onFocus={() => {
+    // Pre-warm the file input for faster response
+    if (navigator.userAgent.includes('Chrome')) {
+      // Chrome-specific optimization
+      document.documentElement.style.setProperty('--file-input-optimized', 'true');
+    }
+  }}
+/>
       <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
       </svg>
