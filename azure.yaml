@@ -1,0 +1,6 @@
+language: node
+buildCommands:
+  - npm install
+  - npm run build
+outputLocation: dist
+startupCommand: ""

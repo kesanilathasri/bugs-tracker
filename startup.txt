@@ -1,0 +1,17 @@
+# Azure App Service Startup Configuration
+# This is a STATIC WEB APP, not a Node.js application
+
+# Disable Node.js server startup
+WEBSITE_NODE_DEFAULT_VERSION=0
+WEBSITES_PORT=0
+
+# Static file serving configuration
+# The app will serve static files from the dist/ folder
+# No server process is needed
+
+# Build commands (run during deployment)
+# npm install
+# npm run build
+
+# Static files will be served from dist/ folder
+# React routing handled by web.config rewrite rules
