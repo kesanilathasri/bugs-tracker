@@ -1,4 +1,4 @@
-# Defect Management System (DMS)
+# 🐛 Defect Management System (DMS)
 
 A modern, interactive dashboard for managing software defects/bugs, built with **React**, **Vite**, and **Tailwind CSS**. Visualize, filter, and update bugs with ease using pie charts, tables, and a clean UI. Now with advanced dropdown management, Azure deployment, and enhanced user experience.
 
