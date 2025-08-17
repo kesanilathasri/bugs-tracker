@@ -6,16 +6,17 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "postinstall": "npm run build"
+    "postinstall": "npm run build",
+    "start": "node server.js"
   },
   "dependencies": {
+    "express": "^5.1.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
     "react-icons": "^5.5.0",
     "react-toastify": "^11.0.5",
     "recharts": "^2.8.0",
-    "xlsx": "^0.18.5",
-    "express": "^5.1.0"
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.0.3",
