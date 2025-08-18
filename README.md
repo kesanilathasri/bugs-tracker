@@ -1,6 +1,6 @@
 # 🐛 Defect Management System (DMS)
 
-A modern, interactive dashboard for managing software defects/bugs, built with **React**, **Vite**, and **Tailwind CSS**. Visualize, filter, and update bugs with ease using pie charts, tables, and a clean UI. Now with advanced dropdown management, Azure deployment, and enhanced user experience.
+A modern, interactive dashboard for managing software defects/bugs, built with **React**, **Vite**, and **Tailwind CSS**. Visualize, filter, and update bugs with ease using pie charts, tables, and a clean UI. Now with advanced dropdown management, Azure App Service hosting, and enhanced user experience.
 
 ---
 
@@ -9,7 +9,7 @@ A modern, interactive dashboard for managing software defects/bugs, built with *
 - **Pie Charts**: Visualize bug distribution by owner for current and previous weeks.
 - **Tabbed Interface**: Switch between All Bugs, Bugs List, and Owner-specific views.
 - **Global & Section Search**: Instantly find bugs by Bug ID or text.
-- **Excel Import**: Upload bug lists via Excel; new uploads become “Current Week” and older bugs are archived.
+- **Excel Import**: Upload bug lists via Excel; new uploads become "Current Week" and older bugs are archived.
 - **Bug Details**: View, edit, and comment on individual bugs.
 - **Customizable Fields**: Track application, business function, root cause, status, owner, and more.
 - **Consistent Owner Colors**: Each owner is always represented by the same color in charts and legends.
@@ -34,15 +34,15 @@ A modern, interactive dashboard for managing software defects/bugs, built with *
 ## 🏗️ Architecture Overview
 
 ```
-[React Frontend] <-> [Node.js Backend] <-> [Azure SQL Database]
+[React Frontend] <-> [LocalStorage] <-> [Azure App Service]
 - UI: React components (App.jsx, Card, Tabs, etc.)
-- State: useState/useEffect, LocalStorage (current), Azure SQL (future)
+- State: useState/useEffect, LocalStorage for data persistence
 - Data Import: Excel (xlsx) with duplicate prevention
 - Visualization: Recharts with consistent owner colors
 - Notifications: react-toastify
-- Backend: None (Local Storage only)
-- Database: Azure SQL Database (ready for integration)
-- Deployment: Azure App Service with automatic builds
+- Backend: None (Pure frontend application)
+- Data Storage: LocalStorage (browser-based persistence)
+- Deployment: Azure App Service (static file hosting)
 ```
 
 ---
@@ -67,16 +67,18 @@ A modern, interactive dashboard for managing software defects/bugs, built with *
    ```
    The built files will be in the `dist/` folder.
 
-### **Azure Deployment** ✨ **NEW**
-1. **Build and deploy**
+### **Production Mode** ✨ **NEW**
+1. **Run in production mode locally**
    ```bash
-   npm run azure-deploy
+   npm run start
    ```
+   This builds and serves the production version on port 3000.
 
-2. **Azure App Service** automatically:
-   - Installs dependencies
-   - Builds the React app
-   - Serves static files from dist/ folder
+2. **Deploy to Azure App Service**
+   ```bash
+   npm run deploy
+   ```
+   Builds and serves on production port 8080, ready for Azure deployment.
 
 ---
 
@@ -93,11 +95,9 @@ bug-dashboard-app/
 │           ├── button.jsx   # Reusable Button component
 │           ├── card.jsx     # Card layout component
 │           └── tabs.jsx     # Tabs, TabList, TabTrigger, etc.
-├── web.config           # IIS configuration for static files
 ├── package.json         # Dependencies and scripts
 ├── vite.config.js       # Vite configuration
 ├── tailwind.config.js   # Tailwind CSS configuration
-├── .deployment          # Azure deployment configuration
 ├── .gitignore           # Git ignore rules
 └── .gitattributes       # Git line ending rules
 ```
@@ -114,23 +114,24 @@ bug-dashboard-app/
 - **react-icons** (FontAwesome icons)
 - **react-toastify** (notifications)
 - **xlsx** (Excel import)
-
-### **Infrastructure** ✨ **NEW**
-- **Azure App Service** (hosting platform)
-- **Azure SQL Database** (ready for integration)
-- **Static Web App** deployment
+- **serve** (static file serving for production)
 
 ### **Data Storage**
-- **LocalStorage** (current implementation)
-- **Azure SQL** (production ready)
+- **LocalStorage** (browser-based persistence)
+- **No backend required** (pure frontend application)
+
+### **Deployment**
+- **Azure App Service** (current hosting platform)
+- **Static file hosting** (serves built React app)
+- **Production build scripts** included
 
 ---
 
 ## 📊 How It Works
 
-- **Upload Excel**: Drag-and-drop or select an Excel file to import bugs. The latest upload is “Current Week”; previous bugs are archived.
+- **Upload Excel**: Drag-and-drop or select an Excel file to import bugs. The latest upload is "Current Week"; previous bugs are archived.
 - **Pie Charts**: Click a segment to filter bugs by owner and week.
-- **Global Search**: Enter a Bug ID in the top-right search bar to jump to the owner’s bug list.
+- **Global Search**: Enter a Bug ID in the top-right search bar to jump to the owner's bug list.
 - **Edit Bugs**: Click a Bug ID to view/edit details, add comments, and update fields.
 - **Clear All**: Remove all bugs and start fresh.
 
@@ -145,16 +146,11 @@ bug-dashboard-app/
 
 ## 🧩 Extension Guide
 
-### **Backend Integration** ✨ **COMPLETED**
-✅ **Frontend-only architecture** using Local Storage for data persistence
-✅ **Azure deployment** configured and ready
-✅ **Database ready** for Azure SQL integration
-
-**To connect to Azure SQL Database:**
-1. Create Azure SQL Database instance
-2. Update connection strings in Azure configuration
-3. Replace LocalStorage calls with database queries
-4. Deploy to Azure App Service
+### **Current Architecture** ✨ **COMPLETED**
+✅ **Frontend-only architecture** using LocalStorage for data persistence
+✅ **No backend required** - pure React application
+✅ **Azure App Service hosting** - deployed and running
+✅ **Production build scripts** included
 
 ### **Advanced Dropdown Management** ✨ **NEW**
 **How the dynamic dropdowns work:**
@@ -174,11 +170,12 @@ bug-dashboard-app/
 **To add new fields:**
 1. Add the field to `bugFields` in `App.jsx`.
 2. Update forms, tables, and Excel import logic to include the new field.
-3. (If using a backend) Update the database schema and API.
+3. No backend changes required - pure frontend application.
 
-**To integrate with Azure DevOps/ServiceNow:**
-1. Add integration logic in the backend for external APIs.
-2. Add UI controls for sync/import/export as needed.
+**To integrate with external services (future):**
+1. Add API integration logic directly in React components
+2. Use fetch/axios for external API calls
+3. Maintain LocalStorage as fallback
 
 **To customize UI/theme:**
 - Adjust Tailwind classes in `index.css` and component files.
@@ -188,9 +185,10 @@ bug-dashboard-app/
 
 ## 📝 Customization & Extensibility
 
-- **Backend Ready**: Easily swap LocalStorage for a backend API (Node.js, .NET, etc.).
-- **Add More Fields**: Extend `bugFields` in `App.jsx` for new data points.
-- **Theming**: Tailwind makes it easy to adjust colors, spacing, and dark mode.
+- **Pure Frontend**: No backend dependencies or server setup required
+- **Add More Fields**: Extend `bugFields` in `App.jsx` for new data points
+- **Theming**: Tailwind makes it easy to adjust colors, spacing, and dark mode
+- **Azure Hosting**: Deployed on Azure App Service for reliable hosting
 
 ---
 
@@ -201,16 +199,11 @@ bug-dashboard-app/
 2. Save changes
 3. Vite reloads the browser automatically
 
-### **Frontend Development** ✨ **NEW**
-1. Edit React components for frontend changes
-2. Test locally with `npm run dev`
-3. Deploy to Azure with Git push
-
-### **Azure Deployment Workflow** ✨ **NEW**
-1. **Local Development**: `npm run dev` (frontend only)
+### **Production Workflow** ✨ **NEW**
+1. **Local Development**: `npm run dev` (development mode)
 2. **Production Build**: `npm run build` (creates dist/ folder)
-3. **Azure Deployment**: Push to GitHub → Azure auto-deploys
-4. **Production**: Azure serves static files from dist/ folder
+3. **Local Production Test**: `npm run start` (serves on port 3000)
+4. **Azure Deployment**: `npm run deploy` (builds for Azure App Service)
 
 ---
 
@@ -224,24 +217,28 @@ bug-dashboard-app/
 - **Dependencies missing**: Run `npm install`
 - **Port in use**: Run `npm run dev -- --port 3000`
 
-### **Azure Deployment Issues** ✨ **NEW**
-- **"express is not defined"**: Not applicable (frontend-only app)
-- **Port 8080 not responding**: Check Azure App Service configuration
+### **Production Issues** ✨ **NEW**
 - **Build failures**: Verify `package.json` scripts are correct
 - **Module errors**: Ensure all dependencies are in `package.json`
+- **Port conflicts**: Change ports in package.json scripts if needed
+
+### **Azure App Service Issues**
+- **Deployment failures**: Check Azure App Service configuration
+- **Port 8080 not responding**: Verify Azure App Service is running
+- **Build errors**: Ensure all dependencies are properly installed
 
 ### **Common Solutions**
-- **Restart App Service** if deployment fails
-- **Check deployment logs** in Azure Portal
-- **Verify startup command** is empty (no command)
-- **Set WEBSITE_NODE_DEFAULT_VERSION** to `0` in Azure
+- **Clear node_modules**: Delete and run `npm install` again
+- **Check Node version**: Ensure you're using Node.js 16+ for Vite
+- **Verify scripts**: Check that all scripts in package.json are correct
+- **Azure restart**: Restart Azure App Service if deployment fails
 
 ---
 
 ## 📣 Credits
 
 Developed with ❤️ by Low-Code Legends.  
-Special thanks to Cursor, other contributors and open-source libraries.
+Special thanks to Cursor IDE, other contributors and open-source libraries.
 
 ---
 
