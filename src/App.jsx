@@ -91,19 +91,30 @@ const bugFields = [
  { key: 'lastUpdated', label: 'Last Updated', desc: 'Last Updated Date' },
 ];
 
+// High-level fields for Bugs List Tab (showing only essential information)
+const bugsListFields = [
+ { key: 'incidentId', label: 'Incident/Bug ID', desc: 'Incident Number from SNOW or Bug ID from ADO' },
+ { key: 'bugDescription', label: 'Bug Description', desc: 'Short Description from SNOW or ADO' },
+ { key: 'dateReported', label: 'Date Reported', desc: 'Date the Bug was reported' },
+ { key: 'bugStatus', label: 'Bug Status', desc: 'ADO Status' },
+ { key: 'environment', label: 'Environment', desc: 'UAT or PROD' },
+ { key: 'correctiveOwner', label: 'Corrective Action Owner', desc: 'Team Member Name' },
+ { key: 'lastUpdated', label: 'Last Updated', desc: 'Last Updated Date' },
+];
+
 // Replace mockBugs with stateful bugs array
 const defaultBugs = [
  {
  application: 'GIC', businessFunction: 'GIC', incidentId: '526480', bugDescription: 'GIC Processing Error for 9/1/2025 Renewal Group', dateReported: '22-Jul', bugStatus: 'New', environment: '4 - Prod', rootCause: 'Environment Issue', detailedComments: '11/08: Initial investigation started\n12/08: Root cause identified', qaCorrectiveAction: 'QA team reviewing the fix', correctiveStatus: 'Open', correctiveOwner: 'Latha Sri', lastUpdated: '07-29-2025 04:07:29',
  },
  {
- application: 'Facets', businessFunction: 'Batch', incidentId: '526481', bugDescription: 'Batch job failed for nightly process', dateReported: '23-Jul', bugStatus: 'Committed', environment: '3 - UAT', rootCause: 'Test Data Unavailable', detailedComments: '11/08: Issue reported\n13/08: Fix implemented', qaCorrectiveAction: 'QA testing completed', correctiveStatus: 'Closed', correctiveOwner: 'Deva', lastUpdated: '07-30-2025 10:15:00',
+ application: 'Facets', businessFunction: 'Batch', incidentId: '526481', bugDescription: 'Batch job failed for nightly process', dateReported: '23-Jul', bugStatus: 'Committed', environment: '3 - UAT', rootCause: 'Test Data Unavailable', detailedComments: '11/08: Issue reported\n13/08: Fix implemented', qaCorrectiveAction: 'QA testing completed', correctiveStatus: 'Closed', correctiveOwner: 'Navya', lastUpdated: '07-30-2025 10:15:00',
  },
  {
- application: 'ETL', businessFunction: 'OncoHealth', incidentId: '526482', bugDescription: 'ETL mapping error for new field', dateReported: '24-Jul', bugStatus: 'New', environment: '4 - Prod', rootCause: 'Requirement Enhancement', detailedComments: '11/08: Mapping issue identified', qaCorrectiveAction: 'QA team analyzing requirements', correctiveStatus: 'Open', correctiveOwner: 'Shiva', lastUpdated: '07-31-2025 09:00:00',
+ application: 'ETL', businessFunction: 'OncoHealth', incidentId: '526482', bugDescription: 'ETL mapping error for new field', dateReported: '24-Jul', bugStatus: 'New', environment: '4 - Prod', rootCause: 'Requirement Enhancement', detailedComments: '11/08: Mapping issue identified', qaCorrectiveAction: 'QA team analyzing requirements', correctiveStatus: 'Open', correctiveOwner: 'Amogh', lastUpdated: '07-31-2025 09:00:00',
  },
  {
- application: 'Facets', businessFunction: 'Cigna', incidentId: '526483', bugDescription: 'Cigna integration timeout', dateReported: '25-Jul', bugStatus: 'New', environment: '3 - UAT', rootCause: 'Missed QA Test Scenario', detailedComments: '11/08: Timeout issue found\n14/08: Fix deployed', qaCorrectiveAction: 'QA regression testing in progress', correctiveStatus: 'Closed', correctiveOwner: 'Roja', lastUpdated: '08-01-2025 13:45:00',
+ application: 'Facets', businessFunction: 'Cigna', incidentId: '526483', bugDescription: 'Cigna integration timeout', dateReported: '25-Jul', bugStatus: 'New', environment: '3 - UAT', rootCause: 'Missed QA Test Scenario', detailedComments: '11/08: Timeout issue found\n14/08: Fix deployed', qaCorrectiveAction: 'QA regression testing in progress', correctiveStatus: 'Closed', correctiveOwner: 'Monisha', lastUpdated: '08-01-2025 13:45:00',
  },
 ];
 const getInitialBugs = () => {
@@ -223,7 +234,7 @@ export default function BugsDashboard() {
  'Not QA Tested',
  ]));
  const [correctiveStatusOptions, setCorrectiveStatusOptions] = useState(() => getStoredOptions('options_correctiveStatus', ['Open', 'Closed']));
- const [correctiveOwnerOptions, setCorrectiveOwnerOptions] = useState(() => getStoredOptions('options_correctiveOwner', ['Deva', 'Latha', 'Roja', 'Shiva']));
+ const [correctiveOwnerOptions, setCorrectiveOwnerOptions] = useState(() => getStoredOptions('options_correctiveOwner', ['Unassigned', 'Navya', 'Amogh', 'Monisha', 'Raju', 'Janani', 'Mohith', 'Akhil', 'Latha Sri', 'Hemalatha']));
 
 // Dropdown open/close states
 const [environmentDropdownOpen, setEnvironmentDropdownOpen] = useState(false);
@@ -256,6 +267,11 @@ const [correctiveOwnerDropdownOpen, setCorrectiveOwnerDropdownOpen] = useState(f
  const [qaCorrectiveAction, setQaCorrectiveAction] = useState('');
  const [detailsTab, setDetailsTab] = useState('comments'); // 'comments' or 'qa'
  const [unsaved, setUnsaved] = useState(false);
+ 
+ // Add state for attachments and attachments modal
+ const [attachments, setAttachments] = useState([]);
+ const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
+ const [attachmentUploadLoading, setAttachmentUploadLoading] = useState(false);
 
  // Add the hook here:
  const [searchResultCount, setSearchResultCount] = useState(null);
@@ -313,6 +329,19 @@ const [previousTab, setPreviousTab] = useState('tab1');
     setDetailedComment("");
     setComments(selectedBug.comments || []);
     setQaCorrectiveAction(selectedBug.qaCorrectiveAction || '');
+    
+    // Load attachments for the selected bug
+    try {
+      const storedAttachments = localStorage.getItem(`attachments_${selectedBug.incidentId}`);
+      if (storedAttachments) {
+        setAttachments(JSON.parse(storedAttachments));
+      } else {
+        setAttachments([]);
+      }
+    } catch (error) {
+      console.error('Error loading attachments:', error);
+      setAttachments([]);
+    }
   }
 }, [selectedBug]);
 
@@ -330,12 +359,161 @@ const [previousTab, setPreviousTab] = useState('tab1');
   }
 }, [selectedBug, editBug, comments, qaCorrectiveAction, detailedComment]);
 
+ // Handler for deleting a bug
+ const handleDeleteBug = () => {
+   if (!selectedBug) return;
+   
+   if (window.confirm(`Are you sure you want to delete bug ${selectedBug.incidentId}? This action cannot be undone.`)) {
+     try {
+       // Remove bug from current week bugs
+       const updatedCurrentWeek = currentWeekBugs.filter(bug => bug.incidentId !== selectedBug.incidentId);
+       setCurrentWeekBugs(updatedCurrentWeek);
+       localStorage.setItem('currentWeekBugs', JSON.stringify(updatedCurrentWeek));
+       
+       // Remove bug from last week bugs
+       const updatedLastWeek = lastWeekBugs.filter(bug => bug.incidentId !== selectedBug.incidentId);
+       setLastWeekBugs(updatedLastWeek);
+       localStorage.setItem('lastWeekBugs', JSON.stringify(updatedLastWeek));
+       
+       // Remove attachments from localStorage
+       localStorage.removeItem(`attachments_${selectedBug.incidentId}`);
+       
+       // Update bugs array
+       setBugs([...updatedCurrentWeek, ...updatedLastWeek]);
+       
+       // Navigate back to dashboard
+       setSelectedBug(null);
+       setSelectedAssignee(null);
+       setTabValue('tab1');
+       setSearchResultCount(null);
+       setSearch("");
+       
+       toast.success(`Bug ${selectedBug.incidentId} has been deleted successfully`);
+     } catch (error) {
+       console.error('Error deleting bug:', error);
+       toast.error('Failed to delete bug');
+     }
+   }
+ };
+
+ // Handler for uploading attachments
+ const handleAttachmentUpload = async (files) => {
+   if (!selectedBug || !files || files.length === 0) return;
+   
+   setAttachmentUploadLoading(true);
+   
+   try {
+     const newAttachments = [];
+     
+     for (let i = 0; i < files.length; i++) {
+       const file = files[i];
+       
+       // Validate file type
+       const allowedTypes = [
+         'image/jpeg', 'image/jpg', 'image/png', 'image/gif', 'image/webp',
+         'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet', // .xlsx
+         'application/vnd.ms-excel', // .xls
+         'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
+         'application/msword', // .doc
+         'text/csv', // .csv
+         'application/pdf' // .pdf
+       ];
+       
+       if (!allowedTypes.includes(file.type)) {
+         toast.error(`File type not supported: ${file.name}`);
+         continue;
+       }
+       
+       // Validate file size (5MB limit)
+       if (file.size > 5 * 1024 * 1024) {
+         toast.error(`File too large: ${file.name} (max 5MB)`);
+         continue;
+       }
+       
+       // Create attachment object
+       const attachment = {
+         id: Date.now() + i,
+         name: file.name,
+         type: file.type,
+         size: file.size,
+         uploadDate: new Date().toISOString(),
+         data: await fileToBase64(file)
+       };
+       
+       newAttachments.push(attachment);
+     }
+     
+     if (newAttachments.length > 0) {
+       const updatedAttachments = [...attachments, ...newAttachments];
+       setAttachments(updatedAttachments);
+       
+       // Save to localStorage
+       localStorage.setItem(`attachments_${selectedBug.incidentId}`, JSON.stringify(updatedAttachments));
+       
+       toast.success(`Successfully uploaded ${newAttachments.length} attachment(s)`);
+     }
+   } catch (error) {
+     console.error('Error uploading attachments:', error);
+     toast.error('Failed to upload attachments');
+   } finally {
+     setAttachmentUploadLoading(false);
+   }
+ };
+
+ // Helper function to convert file to base64
+ const fileToBase64 = (file) => {
+   return new Promise((resolve, reject) => {
+     const reader = new FileReader();
+     reader.readAsDataURL(file);
+     reader.onload = () => resolve(reader.result);
+     reader.onerror = error => reject(error);
+   });
+ };
+
+ // Handler for downloading attachments
+ const handleDownloadAttachment = (attachment) => {
+   try {
+     const link = document.createElement('a');
+     link.href = attachment.data;
+     link.download = attachment.name;
+     document.body.appendChild(link);
+     link.click();
+     document.body.removeChild(link);
+   } catch (error) {
+     console.error('Error downloading attachment:', error);
+     toast.error('Failed to download attachment');
+   }
+ };
+
+ // Handler for renaming attachments
+ const handleRenameAttachment = (attachmentId, newName) => {
+   if (!newName || newName.trim() === '') return;
+   
+   const updatedAttachments = attachments.map(att => 
+     att.id === attachmentId ? { ...att, name: newName.trim() } : att
+   );
+   
+   setAttachments(updatedAttachments);
+   localStorage.setItem(`attachments_${selectedBug.incidentId}`, JSON.stringify(updatedAttachments));
+   toast.success('Attachment renamed successfully');
+ };
+
+ // Handler for deleting attachments
+ const handleDeleteAttachment = (attachmentId) => {
+   if (window.confirm('Are you sure you want to delete this attachment?')) {
+     const updatedAttachments = attachments.filter(att => att.id !== attachmentId);
+     setAttachments(updatedAttachments);
+     localStorage.setItem(`attachments_${selectedBug.incidentId}`, JSON.stringify(updatedAttachments));
+     toast.success('Attachment deleted successfully');
+   }
+ };
+
  // Handler for posting a comment (auto-saves the comment)
  const handlePostComment = () => {
   if (!selectedBug) return;
   if (detailedComment.trim()) {
-    // Format current time in MM/DD/YYYY, HH:MM:SS AM/PM format
-    const now = new Date().toLocaleString('en-US', {
+    // Use current time for new comments
+    const commentDate = new Date().toLocaleString('en-US', {
       month: '2-digit',
       day: '2-digit',
       year: 'numeric',
@@ -344,8 +522,9 @@ const [previousTab, setPreviousTab] = useState('tab1');
       second: '2-digit',
       hour12: true
     });
+    
     const newComments = [
-      { text: detailedComment, time: now },
+      { text: detailedComment.trim(), time: commentDate },
       ...comments,
     ];
     
@@ -354,7 +533,7 @@ const [previousTab, setPreviousTab] = useState('tab1');
     setDetailedComment("");
 
     // Build an updated bug object for persistence (only persist comments and lastUpdated)
-    const updatedBug = { ...selectedBug, comments: newComments, lastUpdated: now };
+    const updatedBug = { ...selectedBug, comments: newComments, lastUpdated: commentDate };
 
     // Determine where the bug currently lives and update that collection
     const inCurrent = currentWeekBugs.some(b => b.incidentId === selectedBug.incidentId);
@@ -385,6 +564,143 @@ const [previousTab, setPreviousTab] = useState('tab1');
   }
  };
 
+ // Simplified function to parse detailed comments - keep exact text, add upload timestamp
+ const parseDetailedComments = (commentsText, uploadTime) => {
+   if (!commentsText) return [];
+   
+   // Split by new lines to identify multiple comments
+   const lines = commentsText.toString().split('\n').filter(line => line.trim());
+   const parsedComments = [];
+   
+   // Each line becomes a separate comment with upload timestamp
+   for (const line of lines) {
+     const commentText = line.trim();
+     if (commentText) {
+       parsedComments.push({
+         text: commentText,
+         time: uploadTime,
+         originalDate: uploadTime,
+         sortDate: new Date(uploadTime)
+       });
+     }
+   }
+   
+   // Sort by upload time (all will be the same, but keeping for consistency)
+   return parsedComments.sort((a, b) => a.sortDate - b.sortDate);
+ };
+
+ // Enhanced helper function to parse various date formats with year handling
+ const parseFlexibleDate = (dateStr, format = 'EU') => {
+   console.log('=== parseFlexibleDate Debug ===');
+   console.log('Input dateStr:', dateStr, 'format:', format);
+   
+   try {
+     let day, month, year;
+     
+     if (format === 'EU') {
+       // European format: DD/MM or DD/MM/YYYY
+       if (dateStr.includes('/')) {
+         const parts = dateStr.split('/');
+         console.log('EU format parts:', parts);
+         if (parts.length === 2) {
+           // DD/MM format - need to determine year
+           [day, month] = parts;
+           year = determineYear(parseInt(month), parseInt(day));
+           console.log('DD/MM format - day:', day, 'month:', month, 'determined year:', year);
+         } else if (parts.length === 3) {
+           // DD/MM/YYYY format
+           [day, month, year] = parts;
+           console.log('DD/MM/YYYY format - day:', day, 'month:', month, 'year:', year);
+         }
+       }
+     } else if (format === 'US') {
+       // US format: MM/DD/YYYY
+       const parts = dateStr.split('/');
+       if (parts.length === 3) {
+         [month, day, year] = parts;
+         console.log('US format - month:', month, 'day:', day, 'year:', year);
+       }
+     }
+     
+     if (day && month && year) {
+       // Create date object (month is 0-indexed, so subtract 1)
+       const date = new Date(parseInt(year), parseInt(month) - 1, parseInt(day));
+       console.log('Created date object:', date);
+       
+       // Format to MM/DD/YYYY, HH:MM:SS AM/PM
+       const formattedDate = date.toLocaleString('en-US', {
+         month: '2-digit',
+         day: '2-digit',
+         year: 'numeric',
+         hour: '2-digit',
+         minute: '2-digit',
+         second: '2-digit',
+         hour12: true
+       });
+       console.log('Formatted date:', formattedDate);
+       return formattedDate;
+     }
+     
+     // Fallback for DD/MM format without year
+     if (day && month) {
+       year = determineYear(parseInt(month), parseInt(day));
+       const date = new Date(year, parseInt(month) - 1, parseInt(day));
+       console.log('DD/MM fallback - created date:', date);
+       const formattedDate = date.toLocaleString('en-US', {
+         month: '2-digit',
+         day: '2-digit',
+         year: 'numeric',
+         hour: '2-digit',
+         minute: '2-digit',
+         second: '2-digit',
+         hour12: true
+       });
+       console.log('DD/MM fallback - formatted date:', formattedDate);
+       return formattedDate;
+     }
+     
+   } catch (error) {
+     console.warn('Error parsing date format:', dateStr, error);
+   }
+   
+   console.log('Using fallback current time');
+   // Fallback to current time if parsing fails
+   return new Date().toLocaleString('en-US', {
+     month: '2-digit',
+     day: '2-digit',
+     year: 'numeric',
+     hour: '2-digit',
+     minute: '2-digit',
+     second: '2-digit',
+     hour12: true
+   });
+ };
+
+ // Helper function to determine the most likely year for DD/MM format
+ const determineYear = (month, day) => {
+   const currentDate = new Date();
+   const currentYear = currentDate.getFullYear();
+   const currentMonth = currentDate.getMonth() + 1; // 1-indexed
+   const currentDay = currentDate.getDate();
+   
+   console.log('=== determineYear Debug ===');
+   console.log('Input month:', month, 'day:', day);
+   console.log('Current date:', currentDate);
+   console.log('Current year:', currentYear, 'month:', currentMonth, 'day:', currentDay);
+   
+   // If the date is in the future relative to current date, use previous year
+   // This handles cases like "25/12" in January (Christmas from last year)
+   if (month < currentMonth || (month === currentMonth && day < currentDay)) {
+     console.log('Date is in the past or current, using current year:', currentYear);
+     return currentYear;
+   } else {
+     console.log('Date is in the future, using previous year:', currentYear - 1);
+     return currentYear - 1;
+   }
+ };
+ 
+
+
  // Handler for saving bug changes
  const handleSaveBug = () => {
  if (!editBug) return;
@@ -403,8 +719,22 @@ const [previousTab, setPreviousTab] = useState('tab1');
  // Merge new comments with existing detailed comments
  let updatedDetailedComments = editBug.detailedComments || '';
  if (detailedComment.trim()) {
-   const newCommentLine = `${now}: ${detailedComment.trim()}`;
-   updatedDetailedComments = updatedDetailedComments ? `${updatedDetailedComments}\n${newCommentLine}` : newCommentLine;
+   // Parse existing comments and add new one
+   const existingComments = parseDetailedComments(updatedDetailedComments, now);
+   
+   // Add new comment with current timestamp
+   const newComment = {
+     text: detailedComment.trim(),
+     time: now,
+     originalDate: now,
+     sortDate: new Date()
+   };
+   
+   // Add new comment and re-sort by date
+   const allComments = [...existingComments, newComment].sort((a, b) => a.sortDate - b.sortDate);
+   
+   // Convert back to text format for storage
+   updatedDetailedComments = allComments.map(c => `${c.time}: ${c.text}`).join('\n');
  }
  
  const updatedBug = { 
@@ -593,66 +923,10 @@ const [previousTab, setPreviousTab] = useState('tab1');
             hour12: true
           });
           
-          // Helper function to parse detailed comments with timestamps
-          const parseDetailedComments = (commentsText) => {
-            if (!commentsText) return [];
-            
-            const lines = commentsText.toString().split('\n').filter(line => line.trim());
-            return lines.map(line => {
-              // Extract date and comment from format like "11/08: <comment>"
-              const match = line.match(/^(\d{1,2}\/\d{1,2}):\s*(.+)$/);
-              if (match) {
-                const [_, date, comment] = match;
-                // Convert DD/MM format to MM/DD/YYYY, HH:MM:SS AM/PM
-                const formattedDate = convertDateFormat(date);
-                return { text: comment.trim(), time: formattedDate };
-              }
-              // If no date format, treat as comment with current time
-              return { text: line.trim(), time: now };
-            });
-          };
-          
-          // Helper function to convert DD/MM format to MM/DD/YYYY, HH:MM:SS AM/PM
-          const convertDateFormat = (dateStr) => {
-            try {
-              // Parse DD/MM format
-              const [day, month] = dateStr.split('/');
-              const currentYear = new Date().getFullYear();
-              
-              // Create date object (month is 0-indexed, so subtract 1)
-              const date = new Date(currentYear, parseInt(month) - 1, parseInt(day));
-              
-              // Format to MM/DD/YYYY, HH:MM:SS AM/PM
-              const formattedDate = date.toLocaleString('en-US', {
-                month: '2-digit',
-                day: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-              });
-              
-              return formattedDate;
-            } catch (error) {
-              console.warn('Error converting date format:', dateStr, error);
-              // Fallback to current time if date parsing fails
-              return new Date().toLocaleString('en-US', {
-                month: '2-digit',
-                day: '2-digit',
-                year: 'numeric',
-                hour: '2-digit',
-                minute: '2-digit',
-                second: '2-digit',
-                hour12: true
-              });
-            }
-          };
-          
           // Process all rows at once for better performance
           const newBugsRaw = json.slice(1).map(row => {
             const detailedCommentsText = row[idx.detailedComments]?.toString() || '';
-            const parsedComments = parseDetailedComments(detailedCommentsText);
+            const parsedComments = parseDetailedComments(detailedCommentsText, now);
             
             // Validate required fields
             const bug = {
@@ -731,11 +1005,67 @@ const [previousTab, setPreviousTab] = useState('tab1');
           // Move all existing bugs to lastWeekBugs, set currentWeekBugs to filtered (non-duplicate) new bugs
           const allOldBugs = [...(Array.isArray(currentWeekBugs) ? currentWeekBugs : []), ...(Array.isArray(lastWeekBugs) ? lastWeekBugs : [])];
           
+          // Auto-update dropdown options with new values from Excel
+          const updateDropdownOptions = () => {
+            // Extract unique values from new bugs
+            const newApplications = [...new Set(filteredNewBugs.map(b => b.application).filter(Boolean))];
+            const newBusinessFunctions = [...new Set(filteredNewBugs.map(b => b.businessFunction).filter(Boolean))];
+            const newEnvironments = [...new Set(filteredNewBugs.map(b => b.environment).filter(Boolean))];
+            const newRootCauses = [...new Set(filteredNewBugs.map(b => b.rootCause).filter(Boolean))];
+            const newCorrectiveStatuses = [...new Set(filteredNewBugs.map(b => b.correctiveStatus).filter(Boolean))];
+            const newCorrectiveOwners = [...new Set(filteredNewBugs.map(b => b.correctiveOwner).filter(Boolean))];
+            
+            // Update application options
+            setApplicationOptions(prev => {
+              const updated = [...new Set([...prev, ...newApplications])];
+              localStorage.setItem('options_application', JSON.stringify(updated));
+              return updated;
+            });
+            
+            // Update business function options
+            setBusinessFunctionOptions(prev => {
+              const updated = [...new Set([...prev, ...newBusinessFunctions])];
+              localStorage.setItem('options_businessFunction', JSON.stringify(updated));
+              return updated;
+            });
+            
+            // Update environment options
+            setEnvironmentOptions(prev => {
+              const updated = [...new Set([...prev, ...newEnvironments])];
+              localStorage.setItem('options_environment', JSON.stringify(updated));
+              return updated;
+            });
+            
+            // Update root cause options
+            setRootCauseOptions(prev => {
+              const updated = [...new Set([...prev, ...newRootCauses])];
+              localStorage.setItem('options_rootCause', JSON.stringify(updated));
+              return updated;
+            });
+            
+            // Update corrective status options
+            setCorrectiveStatusOptions(prev => {
+              const updated = [...new Set([...prev, ...newCorrectiveStatuses])];
+              localStorage.setItem('options_correctiveStatus', JSON.stringify(updated));
+              return updated;
+            });
+            
+            // Update corrective owner options
+            setCorrectiveOwnerOptions(prev => {
+              const updated = [...new Set([...prev, ...newCorrectiveOwners])];
+              localStorage.setItem('options_correctiveOwner', JSON.stringify(updated));
+              return updated;
+            });
+          };
+          
           // Batch state updates for better performance
           Promise.resolve().then(() => {
             setLastWeekBugs(allOldBugs);
             setCurrentWeekBugs(filteredNewBugs);
             setBugs([...filteredNewBugs, ...allOldBugs]);
+            
+            // Update dropdown options with new values
+            updateDropdownOptions();
             
             // Persist to localStorage
             localStorage.setItem('currentWeekBugs', JSON.stringify(filteredNewBugs));
@@ -924,9 +1254,9 @@ const handleNextBug = () => {
  <Button onClick={() => handleNavWithUnsaved(() => { setTabValue('tab1'); setSelectedAssignee(null); setSelectedBug(null); setSearchResultCount(null); setSearch(""); })}><FaArrowLeft className="inline mr-2" />Bugs Dashboard</Button>
  </div>
  <div className="flex gap-2">
- <Button><FaPaperclip className="inline mr-2" />Attachments</Button>
+ <Button onClick={() => setShowAttachmentsModal(true)}><FaPaperclip className="inline mr-2" />Attachments</Button>
  <Button onClick={handleSaveBug}><FaSave className="inline mr-2" />Save</Button>
- <Button><FaTrash className="inline mr-2" />Delete</Button>
+ <Button onClick={handleDeleteBug}><FaTrash className="inline mr-2" />Delete</Button>
  <Button onClick={handlePrevBug} disabled={!hasPrevBug}><FaArrowCircleLeft className="inline mr-2" />Previous</Button>
  <Button onClick={handleNextBug} disabled={!hasNextBug}><FaArrowRight className="inline mr-2" />Next</Button>
  </div>
@@ -1502,6 +1832,95 @@ const handleNextBug = () => {
  )}
  </div>
  </div>
+ 
+ {/* Attachments Section */}
+ <div className="mb-4">
+   <div className="flex items-center justify-between mb-2">
+     <b className="text-gray-800">Attachments ({attachments.length}):</b>
+   </div>
+   {attachments.length > 0 ? (
+     <div className="space-y-2">
+       {attachments.map((attachment) => (
+         <div key={attachment.id} className="flex items-center gap-3 p-3 bg-gray-50 rounded-lg border">
+           {/* File Icon */}
+           <div className="flex-shrink-0">
+             {attachment.type.startsWith('image/') ? (
+               <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                 <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+               </svg>
+             ) : attachment.type.includes('excel') || attachment.type.includes('spreadsheet') ? (
+               <svg className="w-6 h-6 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                 <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 2h8v2H6V6zm0 4h8v2H6v-2zm0 4h6v2H6v-2z" clipRule="evenodd" />
+               </svg>
+             ) : attachment.type.includes('word') || attachment.type.includes('document') ? (
+               <svg className="w-6 h-6 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                 <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 2h8v2H6V6zm0 4h8v2H6v-2zm0 4h6v2H6v-2z" clipRule="evenodd" />
+               </svg>
+             ) : (
+               <svg className="w-6 h-6 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                 <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 2h8v2H6V6zm0 4h8v2H6v-2zm0 4h6v2H6v-2z" clipRule="evenodd" />
+               </svg>
+             )}
+           </div>
+           
+           {/* File Name */}
+           <div className="flex-1 min-w-0">
+             <span className="text-sm font-medium text-gray-900 truncate block" title={attachment.name}>
+               {attachment.name}
+             </span>
+             <span className="text-xs text-gray-500">
+               {new Date(attachment.uploadDate).toLocaleDateString()} • {(attachment.size / 1024 / 1024).toFixed(2)} MB
+             </span>
+           </div>
+           
+           {/* Action Buttons */}
+           <div className="flex items-center gap-2 flex-shrink-0">
+             <Button
+               onClick={() => {
+                 const newName = window.prompt('Enter new name for attachment:', attachment.name);
+                 if (newName && newName.trim() !== '') {
+                   handleRenameAttachment(attachment.id, newName);
+                 }
+               }}
+               className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300 hover:border-blue-400 rounded-full"
+               title="Rename attachment"
+             >
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+               </svg>
+             </Button>
+             <Button
+               onClick={() => handleDownloadAttachment(attachment)}
+               className="p-2 bg-green-100 hover:bg-green-200 text-green-700 border-green-300 hover:border-green-400 rounded-full"
+               title="Download attachment"
+             >
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+               </svg>
+             </Button>
+             <Button
+               onClick={() => handleDeleteAttachment(attachment.id)}
+               className="p-2 bg-red-100 hover:bg-red-200 text-red-700 border-red-300 hover:border-red-400 rounded-full"
+               title="Delete attachment"
+             >
+               <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+               </svg>
+             </Button>
+           </div>
+         </div>
+       ))}
+     </div>
+   ) : (
+     <div className="text-center py-6 text-gray-500 bg-gray-50 rounded-lg border-2 border-dashed border-gray-300">
+       <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+       </svg>
+       <p className="mt-2 text-sm">No attachments yet</p>
+       <p className="text-xs text-gray-400">Click the Attachments button to upload files</p>
+     </div>
+   )}
+ </div>
  </CardContent>
  </Card>
  </div>
@@ -1588,7 +2007,7 @@ const handleNextBug = () => {
  <table className="min-w-full text-sm text-left text-gray-900 bg-white border" style={{ backgroundColor: '#fff' }}>
  <thead className="bg-gray-100">
  <tr>
- {bugFields.map(field => (
+ {bugsListFields.map(field => (
  <th
  key={field.key}
  className="px-4 py-2 cursor-pointer"
@@ -1629,7 +2048,7 @@ const handleNextBug = () => {
  (bugIdFilter ? bug.incidentId === bugIdFilter : true)
  ).map((bug, idx) => (
  <tr key={idx} className="border-b" style={{ backgroundColor: '#fff', color: '#222' }}>
- {bugFields.map(field => (
+ {bugsListFields.map(field => (
  <td key={field.key} className="px-4 py-2" style={{ backgroundColor: '#fff', color: '#222' }}>{
  field.key === 'incidentId'
  ? <button className="text-blue-700 underline" onClick={() => { setSelectedBug(bug); setTabValue('tab1'); setSearchResultCount(null); setSearch(""); }}>{bug[field.key]}</button>
@@ -1904,6 +2323,169 @@ const handleNextBug = () => {
  </div>
  </div>
  )}
+ 
+ {/* Attachments Modal */}
+ {showAttachmentsModal && (
+   <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+     <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+       {/* Modal Header */}
+       <div className="flex items-center justify-between p-6 border-b border-gray-200">
+         <h2 className="text-xl font-semibold text-gray-900">
+           Manage Attachments - {selectedBug?.incidentId}
+         </h2>
+         <button
+           onClick={() => setShowAttachmentsModal(false)}
+           className="text-gray-400 hover:text-gray-600 transition-colors"
+         >
+           <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+           </svg>
+         </button>
+       </div>
+       
+       {/* Modal Content */}
+       <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
+         {/* Upload Section */}
+         <div className="mb-6">
+           <h3 className="text-lg font-medium text-gray-900 mb-3">Upload New Attachments</h3>
+           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+             <input
+               type="file"
+               multiple
+               accept=".jpg,.jpeg,.png,.gif,.webp,.xlsx,.xls,.docx,.doc,.csv,.pdf"
+               onChange={(e) => handleAttachmentUpload(e.target.files)}
+               className="hidden"
+               id="attachment-upload"
+               disabled={attachmentUploadLoading}
+             />
+             <label
+               htmlFor="attachment-upload"
+               className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer ${attachmentUploadLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+             >
+               {attachmentUploadLoading ? (
+                 <>
+                   <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                   </svg>
+                   Uploading...
+                 </>
+               ) : (
+                 <>
+                   <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                     <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+                   </svg>
+                   Choose Files
+                 </>
+               )}
+             </label>
+             <p className="mt-2 text-sm text-gray-600">
+               Supported formats: Images (JPG, PNG, GIF, WebP), Excel (XLSX, XLS), Word (DOCX, DOC), CSV, PDF
+             </p>
+             <p className="text-xs text-gray-500">Maximum file size: 5MB per file</p>
+           </div>
+         </div>
+         
+         {/* Current Attachments */}
+         <div>
+           <h3 className="text-lg font-medium text-gray-900 mb-3">Current Attachments ({attachments.length})</h3>
+           {attachments.length > 0 ? (
+             <div className="space-y-3">
+               {attachments.map((attachment) => (
+                 <div key={attachment.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border">
+                   {/* File Icon */}
+                   <div className="flex-shrink-0">
+                     {attachment.type.startsWith('image/') ? (
+                       <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                         <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
+                       </svg>
+                     ) : attachment.type.includes('excel') || attachment.type.includes('spreadsheet') ? (
+                       <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                         <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 2h8v2H6V6zm0 4h8v2H6v-2zm0 4h6v2H6v-2z" clipRule="evenodd" />
+                       </svg>
+                     ) : attachment.type.includes('word') || attachment.type.includes('document') ? (
+                       <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                         <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 2h8v2H6V6zm0 4h8v2H6v-2zm0 4h6v2H6v-2z" clipRule="evenodd" />
+                       </svg>
+                     ) : (
+                       <svg className="w-8 h-8 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                         <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 2h8v2H6V6zm0 4h8v2H6v-2zm0 4h6v2H6v-2z" clipRule="evenodd" />
+                       </svg>
+                     )}
+                   </div>
+                   
+                   {/* File Info */}
+                   <div className="flex-1 min-w-0">
+                     <h4 className="text-sm font-medium text-gray-900 truncate" title={attachment.name}>
+                       {attachment.name}
+                     </h4>
+                     <p className="text-xs text-gray-500">
+                       {new Date(attachment.uploadDate).toLocaleDateString()} • {(attachment.size / 1024 / 1024).toFixed(2)} MB
+                     </p>
+                   </div>
+                   
+                   {/* Actions */}
+                   <div className="flex items-center gap-2">
+                     <Button
+                       onClick={() => {
+                         const newName = window.prompt('Enter new name for attachment:', attachment.name);
+                         if (newName && newName.trim() !== '') {
+                           handleRenameAttachment(attachment.id, newName);
+                         }
+                       }}
+                       className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300 hover:border-blue-400 rounded-full"
+                       title="Rename"
+                     >
+                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                       </svg>
+                     </Button>
+                     <Button
+                       onClick={() => handleDownloadAttachment(attachment)}
+                       className="p-2 bg-green-100 hover:bg-green-200 text-green-700 border-green-300 hover:border-green-400 rounded-full"
+                       title="Download"
+                     >
+                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                       </svg>
+                     </Button>
+                     <Button
+                       onClick={() => handleDeleteAttachment(attachment.id)}
+                       className="p-2 bg-red-100 hover:bg-red-200 text-red-700 border-red-300 hover:border-red-400 rounded-full"
+                       title="Delete"
+                     >
+                       <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1 1v3M4 7h16" />
+                       </svg>
+                     </Button>
+                   </div>
+                 </div>
+               ))}
+             </div>
+           ) : (
+             <div className="text-center py-8 text-gray-500">
+               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+               </svg>
+               <p className="mt-2 text-sm">No attachments uploaded yet</p>
+             </div>
+           )}
+         </div>
+       </div>
+       
+       {/* Modal Footer */}
+       <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+         <Button
+           onClick={() => setShowAttachmentsModal(false)}
+           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+         >
+           Close
+         </Button>
+       </div>
+     </div>
+   </div>
+ )}
+ 
  <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
  <style>{`
    .loader { 
@@ -2065,7 +2647,7 @@ function BugTable({ bugs, search, statusFilter, assigneeFilter, environmentFilte
  <table className="min-w-full text-sm text-left text-gray-900 bg-white border" style={{ backgroundColor: '#fff' }}>
  <thead className="bg-gray-100">
  <tr>
- {bugFields.map(field => (
+ {bugsListFields.map(field => (
  <th
  key={field.key}
  className="px-4 py-2 cursor-pointer"
@@ -2080,7 +2662,7 @@ function BugTable({ bugs, search, statusFilter, assigneeFilter, environmentFilte
  <tbody>
  {filtered.map((bug, idx) => (
  <tr key={idx} className="border-b" style={{ backgroundColor: '#fff', color: '#222' }}>
- {bugFields.map(field => (
+ {bugsListFields.map(field => (
  <td key={field.key} className="px-4 py-2" style={{ backgroundColor: '#fff', color: '#222' }}>{
  field.key === 'incidentId'
  ? <button className="text-blue-700 underline" onClick={() => { setSelectedBug(bug); setTabValue('tab1'); }}>{bug[field.key]}</button>
@@ -2089,7 +2671,7 @@ function BugTable({ bugs, search, statusFilter, assigneeFilter, environmentFilte
  ))}
  </tr>
  ))}
- {filtered.length === 0 && <tr><td colSpan={bugFields.length} className="text-center text-gray-400 py-8">No bugs found.</td></tr>}
+ {filtered.length === 0 && <tr><td colSpan={bugsListFields.length} className="text-center text-gray-400 py-8">No bugs found.</td></tr>}
  </tbody>
  </table>
  </div>

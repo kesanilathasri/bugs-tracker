@@ -1,99 +1,257 @@
-# Excel Upload Instructions for ITQA Bug Dashboard
+# Excel Upload Instructions - ITQA Bug Dashboard
 
-## New Excel Format (12 Fields)
+## 📋 **Excel Upload System Overview**
 
-The application now supports uploading Excel files with all 12 fields for comprehensive bug tracking. When you upload an Excel file, it will automatically move all existing bugs to "Last Week" and set the uploaded bugs as "Current Week".
+This guide covers everything you need to know about uploading bug data from Excel files into the ITQA Bug Dashboard. The system automatically processes Excel files and loads all bug information into the dashboard.
 
-## Required Excel Columns
+## 📁 **Supported File Formats**
 
-Your Excel file must have these exact column headers (case-insensitive):
+- **Excel Files**: .xlsx, .xls
+- **CSV Files**: Comma-separated values
+- **Drag & Drop**: Intuitive file upload interface
+- **File Selection**: Manual file browser selection
 
-1. **Application** - Application for which bug is reported
-2. **Business Function** - High level Function within the Application
-3. **Incident/Bug ID** - Incident Number from SNOW or Bug ID from ADO
-4. **Bug Description** - Short Description from SNOW or ADO
-5. **Date Reported** - Date the Bug was reported
-6. **Bug Status** - ADO Status
-7. **Environment** - UAT or PROD
-8. **High Level Root Cause** - Select from mentioned list
-9. **Detailed Comments** - Comments with date and time stamps
-10. **QA Corrective Action** - QA team corrective action details
-11. **Corrective Action Status** - Open or Closed
-12. **Corrective Action Owner** - Team Member Name
+## 📊 **Required Excel Structure (12 Fields)**
 
-## Detailed Comments Format
+Your Excel file must contain these exact column headers in the first row:
 
-The **Detailed Comments** column can contain comments in either of these formats:
+| Field | Column Header | Description | Required |
+|-------|---------------|-------------|----------|
+| 1 | **Application** | Application for which bug is reported | No |
+| 2 | **Business Function** | High level Function within the Application | No |
+| 3 | **Incident/Bug ID** | Incident Number from SNOW or Bug ID from ADO | Yes |
+| 4 | **Bug Description** | Short Description from SNOW or ADO | Yes |
+| 5 | **Date Reported** | Date the Bug was reported | Yes |
+| 6 | **Bug Status** | ADO Status (New, Committed, etc.) | Yes |
+| 7 | **Environment** | UAT or PROD | Yes |
+| 8 | **High Level Root Cause** | Select from mentioned list | No |
+| 9 | **Detailed Comments** | Comments with date and time stamps | No |
+| 10 | **QA Corrective Action** | QA team corrective action details | No |
+| 11 | **Corrective Action Status** | Open or Closed | No |
+| 12 | **Corrective Action Owner** | Team Member Name | Yes |
 
-**Format 1 (with date):**
+## ⚠️ **Important Notes**
+
+- **Column Headers**: Must match exactly (case-sensitive)
+- **First Row**: Must contain the column headers
+- **Data Rows**: Start from the second row
+- **Required Fields**: Incident ID, Bug Description, Date Reported, Bug Status, Environment, and Corrective Action Owner are mandatory
+- **Optional Fields**: All other fields can be left empty
+
+## 🔄 **Excel Upload Process**
+
+### **Step-by-Step Process**
+
+1. **File Selection**: Choose Excel file or drag & drop
+2. **Automatic Processing**: System parses all 12 fields
+3. **Data Validation**: Essential fields (Incident ID, Description) are validated
+4. **Duplicate Prevention**: Existing bugs are automatically skipped
+5. **Data Migration**: Current week bugs move to last week
+6. **New Data Loading**: Uploaded bugs become current week
+7. **Dropdown Updates**: New values automatically added to dropdowns
+
+### **What Happens During Upload**
+
+- **File Reading**: System reads Excel file and extracts data
+- **Field Mapping**: Columns are mapped to system fields
+- **Data Validation**: Required fields are checked
+- **Duplicate Check**: Existing bugs are identified and skipped
+- **Data Processing**: Comments are parsed and formatted
+- **State Update**: Dashboard data is updated
+- **Dropdown Refresh**: New values are added to dropdown options
+
+## 💬 **Detailed Comments Column Format**
+
+### **Supported Comment Formats**
+
+The **Detailed Comments** column supports multiple formats:
+
+**Format 1: With Date**
 ```
-11/08: Initial investigation started
-12/08: Root cause identified
-13/08: Fix implemented
+07/07: Need to check with Developer
+15/01/2024: Bug reported by user
+08/15: Testing completed
 ```
 
-**Format 2 (without date):**
+**Format 2: Without Date**
 ```
 Initial investigation started
 Root cause identified
 Fix implemented
 ```
 
-**Note:** When you use the DD/MM format, the application will automatically convert it to MM/DD/YYYY, HH:MM:SS AM/PM format for display. Comments without dates will use the current upload time.
+**Format 3: Mixed Format**
+```
+07/07: Need to check with Developer
+Root cause identified
+08/15: Testing completed
+```
 
-## Date Format Handling
+### **Comment Processing Rules**
 
-### Input Format (Excel)
-- **With Date**: `DD/MM: <comment text>` (e.g., "11/08: Initial investigation started")
-- **Without Date**: `<comment text>` (e.g., "Initial investigation started")
+- **Multi-line Support**: Each line becomes a separate comment
+- **Automatic Timestamps**: Upload time added to all comments
+- **Chronological Order**: Comments sorted by upload time
+- **Text Preservation**: Exact text from Excel is preserved
+- **New Line Detection**: Multiple comments identified by line breaks
 
-### Display Format (Application)
-- **All dates are converted to**: `MM/DD/YYYY, HH:MM:SS AM/PM` format
-- **Examples**:
-  - Excel: `11/08: Initial investigation started` → App: `08/11/2024, 10:30:45 AM: Initial investigation started`
-  - Excel: `Fix implemented` → App: `12/15/2024, 02:15:30 PM: Fix implemented`
+## 🔧 **Automatic Dropdown Management**
 
-### Benefits
-- **Consistent Format**: All dates are displayed in a standardized US format
-- **Time Information**: Includes exact time when comments were added
-- **Flexible Input**: Accepts both dated and undated comments from Excel
-- **Automatic Conversion**: No manual date formatting required
+### **How Dropdowns Are Updated**
 
-## Example Excel Row
+The system automatically detects and adds new values from Excel uploads to all dropdown fields:
+
+- **Application**: New applications automatically added
+- **Business Function**: New functions automatically added
+- **Environment**: New environments automatically added
+- **Root Cause**: New root causes automatically added
+- **Corrective Status**: New statuses automatically added
+- **Corrective Owner**: New team members automatically added
+
+### **Dropdown Update Process**
+
+1. **Value Extraction**: New unique values identified from Excel
+2. **Option Addition**: Values added to existing dropdown options
+3. **Local Storage**: Updated options saved to browser storage
+4. **UI Update**: Dropdowns refresh with new options
+5. **Persistence**: Options remembered across sessions
+
+## 📊 **Data Validation & Error Handling**
+
+### **Validation Rules**
+
+- **Required Fields**: Incident ID, Bug Description, Date Reported, Bug Status, Environment, and Corrective Action Owner must be present
+- **Data Types**: System handles text, dates, and numbers
+- **Empty Fields**: Optional fields can be empty
+- **Special Characters**: Most special characters are supported
+
+### **Error Handling**
+
+- **Invalid Files**: Clear error messages for unsupported formats
+- **Missing Headers**: Guidance on required column structure
+- **Data Issues**: Warnings for validation problems
+- **Upload Failures**: Graceful handling of processing errors
+
+## 🚀 **Upload Best Practices**
+
+### **File Preparation**
+
+1. **Use Template**: Start with a known working Excel file
+2. **Check Headers**: Ensure column headers match exactly
+3. **Validate Data**: Check for required field values
+4. **Test Upload**: Try with small dataset first
+5. **Backup Data**: Keep original Excel files as backup
+
+### **Data Organization**
+
+1. **Consistent Format**: Use consistent date and text formats
+2. **Clear Descriptions**: Write clear, concise bug descriptions
+3. **Proper IDs**: Use unique, meaningful incident IDs
+4. **Organized Comments**: Structure comments logically
+5. **Complete Information**: Fill in as many fields as possible
+
+### **Upload Timing**
+
+1. **Weekly Updates**: Upload new data weekly
+2. **Batch Processing**: Upload multiple bugs at once
+3. **Regular Schedule**: Maintain consistent upload schedule
+4. **Data Freshness**: Keep data current and relevant
+
+## 🔍 **Troubleshooting Upload Issues**
+
+### **Common Problems**
+
+**File Not Loading**
+- Check file format (.xlsx, .xls, .csv)
+- Ensure file is not corrupted
+- Verify file size is reasonable
+
+**Column Mapping Errors**
+- Check column headers match exactly
+- Ensure first row contains headers
+- Verify no extra spaces in headers
+
+**Data Not Appearing**
+- Check required fields are filled
+- Verify data starts from second row
+- Ensure no formatting issues
+
+**Dropdown Not Updated**
+- Check for new unique values
+- Verify values are not empty
+- Refresh browser if needed
+
+### **Solutions**
+
+1. **Reformat File**: Use standard Excel format
+2. **Check Headers**: Verify exact column names
+3. **Validate Data**: Ensure required fields present
+4. **Clear Cache**: Refresh browser and try again
+5. **Contact Support**: If issues persist
+
+## 📈 **Upload Results & Feedback**
+
+### **Success Indicators**
+
+- **Upload Complete**: Progress bar reaches 100%
+- **Success Message**: "Excel file uploaded successfully"
+- **Data Visible**: New bugs appear in dashboard
+- **Dropdowns Updated**: New options available
+- **Count Updated**: Bug count increases
+
+### **What to Check After Upload**
+
+1. **Bug Count**: Verify total bug count increased
+2. **New Bugs**: Check new bugs are visible
+3. **Dropdown Options**: Verify new values added
+4. **Data Accuracy**: Review uploaded information
+5. **Comments**: Check comment formatting
+
+## 🔄 **Data Migration Process**
+
+### **Weekly Data Flow**
+
+1. **Current Week**: Active bugs being worked on
+2. **Upload Trigger**: New Excel file uploaded
+3. **Data Migration**: Current week moves to last week
+4. **Fresh Data**: New upload becomes current week
+5. **Historical Access**: Previous week data preserved
+
+### **Data Preservation**
+
+- **All Data Saved**: No data is lost during migration
+- **Historical Access**: Previous weeks remain accessible
+- **Export Available**: Historical data can be exported
+- **Search Function**: Search works across all data
+
+## 📋 **Excel Template Example**
+
+### **Sample Data Structure**
 
 | Application | Business Function | Incident/Bug ID | Bug Description | Date Reported | Bug Status | Environment | High Level Root Cause | Detailed Comments | QA Corrective Action | Corrective Action Status | Corrective Action Owner |
-|-------------|-------------------|------------------|------------------|---------------|------------|-------------|----------------------|-------------------|----------------------|-------------------------|------------------------|
-| GIC | GIC | 526480 | GIC Processing Error for 9/1/2025 Renewal Group | 22-Jul | New | 4 - Prod | Environment Issue | 11/08: Initial investigation started<br>12/08: Root cause identified | QA team reviewing the fix | Open | Latha Sri |
-| Facets | Batch | 526481 | Batch job failed for nightly process | 23-Jul | Committed | 3 - UAT | Test Data Unavailable | Issue reported<br>Fix implemented | QA testing completed | Closed | Deva |
+|-------------|-------------------|------------------|------------------|---------------|------------|-------------|----------------------|-------------------|----------------------|-------------------------|-------------------------|
+| GIC | Batch | BUG-001 | Login page not loading | 01/15/2024 | New | 3 - UAT | Environment Issue | 01/15: Bug reported by user | Investigating root cause | Open | Team Member 1 |
+| Facets | GIC | BUG-002 | Data not saving | 01/16/2024 | Committed | 4 - Prod | Test Data Unavailable | 01/16: Issue identified | Working with development team | Open | Team Member 2 |
 
-## Upload Process
+### **Template Guidelines**
 
-1. **Prepare your Excel file** with the 12 columns as shown above
-2. **Click "Upload Excel"** button in the dashboard
-3. **Select your Excel file** (.xlsx or .xls format)
-4. **Wait for processing** - the app will:
-   - Parse all 12 fields
-   - Extract detailed comments with timestamps
-   - Move existing bugs to "Last Week"
-   - Set uploaded bugs as "Current Week"
-   - Show success message with count of new bugs
+- **Use Consistent Format**: Maintain consistent data formats
+- **Fill Required Fields**: Always include Incident ID and Description
+- **Add Meaningful Comments**: Include relevant progress notes
+- **Update Status**: Keep bug status current
+- **Assign Owners**: Designate responsible team members
 
-## Features
+---
 
-- **Automatic Field Mapping**: The app automatically detects column headers
-- **Flexible Comment Parsing**: Accepts both DD/MM: format and plain text comments
-- **Automatic Date Conversion**: Converts DD/MM format to MM/DD/YYYY, HH:MM:SS AM/PM
-- **Duplicate Prevention**: Existing bugs (by Incident ID) are skipped
-- **Data Validation**: Essential fields (Incident ID, Description) are validated
-- **Historical Data**: All uploaded data is preserved and searchable
+## 📞 **Need Help?**
 
-## Search and Filter
+If you encounter issues with Excel uploads:
 
-You can now search across all 12 fields including:
-- Application, Business Function, Bug Description
-- Root Cause, Detailed Comments, QA Corrective Action
-- All other fields are searchable and filterable
+1. **Check This Guide**: Review the troubleshooting section
+2. **Verify File Format**: Ensure Excel structure is correct
+3. **Test With Sample**: Try with a simple test file
+4. **Contact Support**: Reach out to your system administrator
 
-## Export
+---
 
-The "Extract Bugs" function now exports all 12 fields to Excel, providing a complete weekly summary of Open status bugs. 
+**Excel Upload System** - Seamlessly integrate your bug data into the ITQA Bug Dashboard. 
