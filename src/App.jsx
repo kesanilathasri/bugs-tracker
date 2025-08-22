@@ -84,6 +84,8 @@ const bugFields = [
  { key: 'bugStatus', label: 'Bug Status', desc: 'ADO Status' },
  { key: 'environment', label: 'Environment', desc: 'UAT or PROD' },
  { key: 'rootCause', label: 'High Level Root Cause', desc: 'Select from mentioned list' },
+ { key: 'detailedComments', label: 'Detailed Comments', desc: 'Comments with date and time stamps' },
+ { key: 'qaCorrectiveAction', label: 'QA Corrective Action', desc: 'QA team corrective action details' },
  { key: 'correctiveStatus', label: 'Corrective Action Status', desc: 'Open or Closed' },
  { key: 'correctiveOwner', label: 'Corrective Action Owner', desc: 'Team Member Name' },
  { key: 'lastUpdated', label: 'Last Updated', desc: 'Last Updated Date' },
@@ -92,16 +94,16 @@ const bugFields = [
 // Replace mockBugs with stateful bugs array
 const defaultBugs = [
  {
- application: 'GIC', businessFunction: 'GIC', incidentId: '526480', bugDescription: 'GIC Processing Error for 9/1/2025 Renewal Group', dateReported: '22-Jul', bugStatus: 'New', environment: '4 - Prod', rootCause: 'Environment Issue', correctiveStatus: 'Open', correctiveOwner: 'Latha Sri', lastUpdated: '07-29-2025 04:07:29',
+ application: 'GIC', businessFunction: 'GIC', incidentId: '526480', bugDescription: 'GIC Processing Error for 9/1/2025 Renewal Group', dateReported: '22-Jul', bugStatus: 'New', environment: '4 - Prod', rootCause: 'Environment Issue', detailedComments: '11/08: Initial investigation started\n12/08: Root cause identified', qaCorrectiveAction: 'QA team reviewing the fix', correctiveStatus: 'Open', correctiveOwner: 'Latha Sri', lastUpdated: '07-29-2025 04:07:29',
  },
  {
- application: 'Facets', businessFunction: 'Batch', incidentId: '526481', bugDescription: 'Batch job failed for nightly process', dateReported: '23-Jul', bugStatus: 'Committed', environment: '3 - UAT', rootCause: 'Test Data Unavailable', correctiveStatus: 'Closed', correctiveOwner: 'Deva', lastUpdated: '07-30-2025 10:15:00',
+ application: 'Facets', businessFunction: 'Batch', incidentId: '526481', bugDescription: 'Batch job failed for nightly process', dateReported: '23-Jul', bugStatus: 'Committed', environment: '3 - UAT', rootCause: 'Test Data Unavailable', detailedComments: '11/08: Issue reported\n13/08: Fix implemented', qaCorrectiveAction: 'QA testing completed', correctiveStatus: 'Closed', correctiveOwner: 'Deva', lastUpdated: '07-30-2025 10:15:00',
  },
  {
- application: 'ETL', businessFunction: 'OncoHealth', incidentId: '526482', bugDescription: 'ETL mapping error for new field', dateReported: '24-Jul', bugStatus: 'New', environment: '4 - Prod', rootCause: 'Requirement Enhancement', correctiveStatus: 'Open', correctiveOwner: 'Shiva', lastUpdated: '07-31-2025 09:00:00',
+ application: 'ETL', businessFunction: 'OncoHealth', incidentId: '526482', bugDescription: 'ETL mapping error for new field', dateReported: '24-Jul', bugStatus: 'New', environment: '4 - Prod', rootCause: 'Requirement Enhancement', detailedComments: '11/08: Mapping issue identified', qaCorrectiveAction: 'QA team analyzing requirements', correctiveStatus: 'Open', correctiveOwner: 'Shiva', lastUpdated: '07-31-2025 09:00:00',
  },
  {
- application: 'Facets', businessFunction: 'Cigna', incidentId: '526483', bugDescription: 'Cigna integration timeout', dateReported: '25-Jul', bugStatus: 'New', environment: '3 - UAT', rootCause: 'Missed QA Test Scenario', correctiveStatus: 'Closed', correctiveOwner: 'Roja', lastUpdated: '08-01-2025 13:45:00',
+ application: 'Facets', businessFunction: 'Cigna', incidentId: '526483', bugDescription: 'Cigna integration timeout', dateReported: '25-Jul', bugStatus: 'New', environment: '3 - UAT', rootCause: 'Missed QA Test Scenario', detailedComments: '11/08: Timeout issue found\n14/08: Fix deployed', qaCorrectiveAction: 'QA regression testing in progress', correctiveStatus: 'Closed', correctiveOwner: 'Roja', lastUpdated: '08-01-2025 13:45:00',
  },
 ];
 const getInitialBugs = () => {
@@ -332,11 +334,21 @@ const [previousTab, setPreviousTab] = useState('tab1');
  const handlePostComment = () => {
   if (!selectedBug) return;
   if (detailedComment.trim()) {
-    const now = new Date().toLocaleString();
+    // Format current time in MM/DD/YYYY, HH:MM:SS AM/PM format
+    const now = new Date().toLocaleString('en-US', {
+      month: '2-digit',
+      day: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      second: '2-digit',
+      hour12: true
+    });
     const newComments = [
       { text: detailedComment, time: now },
       ...comments,
     ];
+    
     // Update local comments state immediately for UI
     setComments(newComments);
     setDetailedComment("");
@@ -371,25 +383,53 @@ const [previousTab, setPreviousTab] = useState('tab1');
 
     toast.success('Comment posted and saved.');
   }
-};
+ };
 
  // Handler for saving bug changes
  const handleSaveBug = () => {
  if (!editBug) return;
- const now = new Date().toLocaleString();
- const updatedBug = { ...editBug, comments, qaCorrectiveAction, lastUpdated: now };
+ 
+ // Format current time in MM/DD/YYYY, HH:MM:SS AM/PM format
+ const now = new Date().toLocaleString('en-US', {
+   month: '2-digit',
+   day: '2-digit',
+   year: 'numeric',
+   hour: '2-digit',
+   minute: '2-digit',
+   second: '2-digit',
+   hour12: true
+ });
+ 
+ // Merge new comments with existing detailed comments
+ let updatedDetailedComments = editBug.detailedComments || '';
+ if (detailedComment.trim()) {
+   const newCommentLine = `${now}: ${detailedComment.trim()}`;
+   updatedDetailedComments = updatedDetailedComments ? `${updatedDetailedComments}\n${newCommentLine}` : newCommentLine;
+ }
+ 
+ const updatedBug = { 
+   ...editBug, 
+   comments, 
+   qaCorrectiveAction, 
+   detailedComments: updatedDetailedComments,
+   lastUpdated: now 
+ };
+ 
  // Update in currentWeekBugs or lastWeekBugs
  let updatedCurrent = currentWeekBugs.map(b => b.incidentId === editBug.incidentId ? updatedBug : b);
  let updatedLast = lastWeekBugs.map(b => b.incidentId === editBug.incidentId ? updatedBug : b);
+ 
  // If not found, add to current
  if (!updatedCurrent.find(b => b.incidentId === editBug.incidentId) && !updatedLast.find(b => b.incidentId === editBug.incidentId)) {
- updatedCurrent = [updatedBug, ...updatedCurrent];
+   updatedCurrent = [updatedBug, ...updatedCurrent];
  }
+ 
  setCurrentWeekBugs(updatedCurrent);
  setLastWeekBugs(updatedLast);
  localStorage.setItem('currentWeekBugs', JSON.stringify(updatedCurrent));
  localStorage.setItem('lastWeekBugs', JSON.stringify(updatedLast));
  setSelectedBug(updatedBug);
+ setDetailedComment(''); // Clear the comment input after saving
  toast.success('Bug details saved!');
  };
 
@@ -437,11 +477,12 @@ const [previousTab, setPreviousTab] = useState('tab1');
  const handleSendSummary = async () => {
   setExtractLoading(true);
   try {
-    // Prepare headers based on bugFields labels
-    const headers = bugFields.map(f => f.label);
+    // Prepare headers based on bugFields labels (excluding lastUpdated as it's internal)
+    const exportFields = bugFields.filter(f => f.key !== 'lastUpdated');
+    const headers = exportFields.map(f => f.label);
 
-    // Helper to map bug to row following bugFields order
-    const toRow = (bug) => bugFields.map(f => (bug && bug[f.key] !== undefined ? bug[f.key] : ''));
+    // Helper to map bug to row following exportFields order
+    const toRow = (bug) => exportFields.map(f => (bug && bug[f.key] !== undefined ? bug[f.key] : ''));
 
     // Filter Open status bugs
     const openCurrent = (Array.isArray(currentWeekBugs) ? currentWeekBugs : []).filter(b => (b.correctiveStatus || '').toLowerCase() === 'open');
@@ -467,14 +508,14 @@ const [previousTab, setPreviousTab] = useState('tab1');
     // Trigger download
     XLSX.writeFile(wb, 'Weekly Bugs Summary.xlsx');
 
-    toast.success('Weekly bugs summary downloaded.');
+    toast.success('Weekly bugs summary downloaded with all 12 fields.');
   } catch (err) {
     console.error(err);
     toast.error('Failed to extract summary.');
   } finally {
     setExtractLoading(false);
   }
-};
+ };
 
  // Drag-and-drop handlers for file upload
  const handleDragOver = (e) => {
@@ -493,8 +534,8 @@ const [previousTab, setPreviousTab] = useState('tab1');
  }
  };
 
- // Minimal bug fields expected from Excel
- const minimalBugFields = ['incidentId', 'bugDescription', 'dateReported', 'bugStatus', 'environment', 'correctiveOwner'];
+ // All bug fields expected from Excel (12 fields)
+ const minimalBugFields = ['application', 'businessFunction', 'incidentId', 'bugDescription', 'dateReported', 'bugStatus', 'environment', 'rootCause', 'detailedComments', 'qaCorrectiveAction', 'correctiveStatus', 'correctiveOwner'];
 
  // Excel upload handler: parse and extract required fields, update state - OPTIMIZED
  const handleExcelUpload = async (e) => {
@@ -525,33 +566,120 @@ const [previousTab, setPreviousTab] = useState('tab1');
           const worksheet = workbook.Sheets[workbook.SheetNames[0]];
           const json = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
           
-          // Find header row and map columns (optimized)
+          // Find header row and map columns for all 12 fields (optimized)
           const headers = json[0];
           const idx = {
+            application: headers.findIndex(h => h && h.toString().toLowerCase().includes('application')),
+            businessFunction: headers.findIndex(h => h && h.toString().toLowerCase().includes('business function')),
             incidentId: headers.findIndex(h => h && h.toString().toLowerCase().includes('incident')),
             bugDescription: headers.findIndex(h => h && h.toString().toLowerCase().includes('description')),
-            dateReported: headers.findIndex(h => h && h.toString().toLowerCase().includes('date')),
-            bugStatus: headers.findIndex(h => h && h.toString().toLowerCase().includes('status')),
+            dateReported: headers.findIndex(h => h && h.toString().toLowerCase().includes('date reported')),
+            bugStatus: headers.findIndex(h => h && h.toString().toLowerCase().includes('bug status')),
             environment: headers.findIndex(h => h && h.toString().toLowerCase().includes('environment')),
-            correctiveOwner: headers.findIndex(h => h && h.toString().toLowerCase().includes('owner')),
+            rootCause: headers.findIndex(h => h && h.toString().toLowerCase().includes('root cause')),
+            detailedComments: headers.findIndex(h => h && h.toString().toLowerCase().includes('detailed comments')),
+            qaCorrectiveAction: headers.findIndex(h => h && h.toString().toLowerCase().includes('qa corrective action')),
+            correctiveStatus: headers.findIndex(h => h && h.toString().toLowerCase().includes('corrective action status')),
+            correctiveOwner: headers.findIndex(h => h && h.toString().toLowerCase().includes('corrective action owner')),
           };
           
-          const now = new Date().toLocaleString();
+          const now = new Date().toLocaleString('en-US', {
+            month: '2-digit',
+            day: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit',
+            second: '2-digit',
+            hour12: true
+          });
+          
+          // Helper function to parse detailed comments with timestamps
+          const parseDetailedComments = (commentsText) => {
+            if (!commentsText) return [];
+            
+            const lines = commentsText.toString().split('\n').filter(line => line.trim());
+            return lines.map(line => {
+              // Extract date and comment from format like "11/08: <comment>"
+              const match = line.match(/^(\d{1,2}\/\d{1,2}):\s*(.+)$/);
+              if (match) {
+                const [_, date, comment] = match;
+                // Convert DD/MM format to MM/DD/YYYY, HH:MM:SS AM/PM
+                const formattedDate = convertDateFormat(date);
+                return { text: comment.trim(), time: formattedDate };
+              }
+              // If no date format, treat as comment with current time
+              return { text: line.trim(), time: now };
+            });
+          };
+          
+          // Helper function to convert DD/MM format to MM/DD/YYYY, HH:MM:SS AM/PM
+          const convertDateFormat = (dateStr) => {
+            try {
+              // Parse DD/MM format
+              const [day, month] = dateStr.split('/');
+              const currentYear = new Date().getFullYear();
+              
+              // Create date object (month is 0-indexed, so subtract 1)
+              const date = new Date(currentYear, parseInt(month) - 1, parseInt(day));
+              
+              // Format to MM/DD/YYYY, HH:MM:SS AM/PM
+              const formattedDate = date.toLocaleString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+              });
+              
+              return formattedDate;
+            } catch (error) {
+              console.warn('Error converting date format:', dateStr, error);
+              // Fallback to current time if date parsing fails
+              return new Date().toLocaleString('en-US', {
+                month: '2-digit',
+                day: '2-digit',
+                year: 'numeric',
+                hour: '2-digit',
+                minute: '2-digit',
+                second: '2-digit',
+                hour12: true
+              });
+            }
+          };
           
           // Process all rows at once for better performance
-          const newBugsRaw = json.slice(1).map(row => ({
-            incidentId: row[idx.incidentId]?.toString() || '',
-            bugDescription: row[idx.bugDescription]?.toString() || '',
-            dateReported: row[idx.dateReported]?.toString() || '',
-            bugStatus: row[idx.bugStatus]?.toString() || '',
-            environment: row[idx.environment]?.toString() || '',
-            correctiveOwner: row[idx.correctiveOwner]?.toString() || 'Unassigned',
-            businessFunction: '',
-            rootCause: '',
-            correctiveStatus: '',
-            lastUpdated: now,
-            comments: [],
-          })).filter(bug => bug.incidentId);
+          const newBugsRaw = json.slice(1).map(row => {
+            const detailedCommentsText = row[idx.detailedComments]?.toString() || '';
+            const parsedComments = parseDetailedComments(detailedCommentsText);
+            
+            // Validate required fields
+            const bug = {
+              application: row[idx.application]?.toString() || '',
+              businessFunction: row[idx.businessFunction]?.toString() || '',
+              incidentId: row[idx.incidentId]?.toString() || '',
+              bugDescription: row[idx.bugDescription]?.toString() || '',
+              dateReported: row[idx.dateReported]?.toString() || '',
+              bugStatus: row[idx.bugStatus]?.toString() || '',
+              environment: row[idx.environment]?.toString() || '',
+              rootCause: row[idx.rootCause]?.toString() || '',
+              detailedComments: detailedCommentsText,
+              qaCorrectiveAction: row[idx.qaCorrectiveAction]?.toString() || '',
+              correctiveStatus: row[idx.correctiveStatus]?.toString() || '',
+              correctiveOwner: row[idx.correctiveOwner]?.toString() || 'Unassigned',
+              lastUpdated: now,
+              comments: parsedComments, // Parse detailed comments into structured format
+            };
+            
+            // Validate that essential fields are present
+            if (!bug.incidentId || !bug.bugDescription) {
+              console.warn('Skipping row with missing essential fields:', row);
+              return null;
+            }
+            
+            return bug;
+          }).filter(bug => bug && bug.incidentId); // Filter out null entries
           
           // 1) De-duplicate within the uploaded file itself (by incidentId)
           const seenInFile = new Set();
@@ -805,22 +933,37 @@ const handleNextBug = () => {
  </div>
  <Card className="bg-white shadow rounded-lg w-full max-w-6xl">
  <CardContent>
- <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+ <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
  <div>
   <b>Application</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      style={{ 
+        width: 'auto',
+        overflow: 'hidden',
+        position: 'relative'
+      }}
       onClick={() => setApplicationDropdownOpen(!applicationDropdownOpen)}
     >
-      <span className={editBug.application ? 'text-black' : 'text-gray-500'}>
+      <span 
+        className={editBug.application ? 'text-black' : 'text-gray-500'} 
+        style={{ 
+          minWidth: '8rem',
+          maxWidth: 'calc(100% - 2rem)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}
+        title={editBug.application || 'Select one Option'}
+      >
         {editBug.application || 'Select one Option'}
       </span>
-      <span className="text-gray-400">▼</span>
+      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
  </div>
     
     {applicationDropdownOpen && (
-      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {applicationOptions.map(opt => (
           <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
             <span
@@ -878,17 +1021,32 @@ const handleNextBug = () => {
   <b>Environment</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      style={{ 
+        width: 'auto',
+        overflow: 'hidden',
+        position: 'relative'
+      }}
       onClick={() => setEnvironmentDropdownOpen(!environmentDropdownOpen)}
     >
-      <span className={editBug.environment ? 'text-black' : 'text-gray-500'}>
+      <span 
+        className={editBug.environment ? 'text-black' : 'text-gray-500'} 
+        style={{ 
+          minWidth: '8rem',
+          maxWidth: 'calc(100% - 2rem)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}
+        title={editBug.environment || 'Select one Option'}
+      >
         {editBug.environment || 'Select one Option'}
       </span>
-      <span className="text-gray-400">▼</span>
+      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
     </div>
     
     {environmentDropdownOpen && (
-      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {environmentOptions.map(opt => (
           <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
             <span
@@ -946,17 +1104,32 @@ const handleNextBug = () => {
   <b>Business Function</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      style={{ 
+        width: 'auto',
+        overflow: 'hidden',
+        position: 'relative'
+      }}
       onClick={() => setBusinessFunctionDropdownOpen(!businessFunctionDropdownOpen)}
     >
-      <span className={editBug.businessFunction ? 'text-black' : 'text-gray-500'}>
+      <span 
+        className={editBug.businessFunction ? 'text-black' : 'text-gray-500'} 
+        style={{ 
+          minWidth: '8rem',
+          maxWidth: 'calc(100% - 2rem)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}
+        title={editBug.businessFunction || 'Select one Option'}
+      >
         {editBug.businessFunction || 'Select one Option'}
       </span>
-      <span className="text-gray-400">▼</span>
+      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
     </div>
     
     {businessFunctionDropdownOpen && (
-      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {businessFunctionOptions.map(opt => (
           <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
             <span
@@ -1014,17 +1187,32 @@ const handleNextBug = () => {
   <b>High Level Root Cause</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      style={{ 
+        width: 'auto',
+        overflow: 'hidden',
+        position: 'relative'
+      }}
       onClick={() => setRootCauseDropdownOpen(!rootCauseDropdownOpen)}
     >
-      <span className={editBug.rootCause ? 'text-black' : 'text-gray-500'}>
+      <span 
+        className={editBug.rootCause ? 'text-black' : 'text-gray-500'} 
+        style={{ 
+          minWidth: '8rem',
+          maxWidth: 'calc(100% - 2rem)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}
+        title={editBug.rootCause || 'Select one Option'}
+      >
         {editBug.rootCause || 'Select one Option'}
       </span>
-      <span className="text-gray-400">▼</span>
+      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
     </div>
     
     {rootCauseDropdownOpen && (
-      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {rootCauseOptions.map(opt => (
           <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
             <span
@@ -1085,17 +1273,32 @@ const handleNextBug = () => {
   <b>Corrective Action Status</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      style={{ 
+        width: 'auto',
+        overflow: 'hidden',
+        position: 'relative'
+      }}
       onClick={() => setCorrectiveStatusDropdownOpen(!correctiveStatusDropdownOpen)}
     >
-      <span className={editBug.correctiveStatus ? 'text-black' : 'text-gray-500'}>
+      <span 
+        className={editBug.correctiveStatus ? 'text-black' : 'text-gray-500'} 
+        style={{ 
+          minWidth: '8rem',
+          maxWidth: 'calc(100% - 2rem)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}
+        title={editBug.correctiveStatus || 'Select one Option'}
+      >
         {editBug.correctiveStatus || 'Select one Option'}
       </span>
-      <span className="text-gray-400">▼</span>
+      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
     </div>
     
     {correctiveStatusDropdownOpen && (
-      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {correctiveStatusOptions.map(opt => (
           <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
             <span
@@ -1156,17 +1359,32 @@ const handleNextBug = () => {
   <b>Corrective Action Owner</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 w-48 cursor-pointer bg-white flex items-center justify-between"
+      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      style={{ 
+        width: 'auto',
+        overflow: 'hidden',
+        position: 'relative'
+      }}
       onClick={() => setCorrectiveOwnerDropdownOpen(!correctiveOwnerDropdownOpen)}
     >
-      <span className={editBug.correctiveOwner ? 'text-black' : 'text-gray-500'}>
+      <span 
+        className={editBug.correctiveOwner ? 'text-black' : 'text-gray-500'} 
+        style={{ 
+          minWidth: '8rem',
+          maxWidth: 'calc(100% - 2rem)',
+          overflow: 'hidden',
+          textOverflow: 'ellipsis',
+          whiteSpace: 'nowrap'
+        }}
+        title={editBug.correctiveOwner || 'Select one Option'}
+      >
         {editBug.correctiveOwner || 'Select one Option'}
       </span>
-      <span className="text-gray-400">▼</span>
+      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
     </div>
     
     {correctiveOwnerDropdownOpen && (
-      <div className="absolute top-full left-0 w-48 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto">
+      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {correctiveOwnerOptions.map(opt => (
           <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
             <span
@@ -1229,6 +1447,9 @@ const handleNextBug = () => {
  </div>
  <div className="mb-4 flex items-center gap-2">
  <b>Bug Description</b> <input className="border rounded px-2 py-1 flex-1 bg-gray-100" value={editBug.bugDescription} readOnly />
+ </div>
+ <div className="mb-4 flex items-center gap-2">
+ <b>High Level Root Cause</b> <input className="border rounded px-2 py-1 flex-1 bg-gray-100" value={editBug.rootCause} readOnly />
  </div>
  {/* Details Tabs */}
  <div className="mb-4">
@@ -1349,6 +1570,8 @@ const handleNextBug = () => {
        (bug.bugStatus || '').toLowerCase().includes(search.toLowerCase()) ||
        (bug.environment || '').toLowerCase().includes(search.toLowerCase()) ||
        (bug.rootCause || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.detailedComments || '').toLowerCase().includes(search.toLowerCase()) ||
+       (bug.qaCorrectiveAction || '').toLowerCase().includes(search.toLowerCase()) ||
        (bug.correctiveStatus || '').toLowerCase().includes(search.toLowerCase()) ||
        (bug.correctiveOwner || '').toLowerCase().includes(search.toLowerCase()) ||
        (bug.lastUpdated || '').toLowerCase().includes(search.toLowerCase())
@@ -1389,6 +1612,8 @@ const handleNextBug = () => {
  (bug.bugStatus || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.environment || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.rootCause || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.detailedComments || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.qaCorrectiveAction || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.correctiveStatus || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.correctiveOwner || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.lastUpdated || '').toLowerCase().includes(search.toLowerCase())
@@ -1424,6 +1649,8 @@ const handleNextBug = () => {
  (bug.bugStatus || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.environment || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.rootCause || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.detailedComments || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.qaCorrectiveAction || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.correctiveStatus || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.correctiveOwner || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.lastUpdated || '').toLowerCase().includes(search.toLowerCase())
@@ -1678,7 +1905,86 @@ const handleNextBug = () => {
  </div>
  )}
  <ToastContainer position="top-right" autoClose={3000} hideProgressBar={false} newestOnTop closeOnClick pauseOnFocusLoss draggable pauseOnHover />
- <style>{`.loader { border: 2px solid #f3f3f3; border-top: 2px solid #3498db; border-radius: 50%; width: 16px; height: 16px; animation: spin 1s linear infinite; } @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }`}</style>
+ <style>{`
+   .loader { 
+     border: 2px solid #f3f3f3; 
+     border-top: 2px solid #3498db; 
+     border-radius: 50%; 
+     width: 16px; 
+     height: 16px; 
+     animation: spin 1s linear infinite; 
+   } 
+   @keyframes spin { 
+     0% { transform: rotate(0deg); } 
+     100% { transform: rotate(360deg); } 
+   }
+   
+   /* Dynamic dropdown styling */
+   .dynamic-dropdown {
+     transition: width 0.2s ease-in-out;
+     word-wrap: break-word;
+     white-space: normal;
+     max-width: 100%;
+     overflow: hidden;
+     position: relative;
+   }
+   
+   .dynamic-dropdown span {
+     overflow-wrap: break-word;
+     word-break: break-word;
+     max-width: calc(100% - 2rem);
+     display: block;
+     overflow: hidden;
+     text-overflow: ellipsis;
+     white-space: nowrap;
+   }
+   
+   /* Ensure dropdown container properly contains all content */
+   .dynamic-dropdown > * {
+     overflow: hidden;
+     max-width: 100%;
+   }
+   
+   /* Fix for text selection highlighting overflow */
+   .dynamic-dropdown span::selection {
+     background-color: #fbbf24;
+     color: #000;
+     overflow: hidden;
+   }
+   
+   .dynamic-dropdown span::-moz-selection {
+     background-color: #fbbf24;
+     color: #000;
+     overflow: hidden;
+   }
+   
+   /* Ensure text highlighting doesn't overflow container */
+   .dynamic-dropdown span {
+     position: relative;
+     z-index: 1;
+   }
+   
+   /* Container overflow protection */
+   .dynamic-dropdown {
+     box-sizing: border-box;
+     padding-right: 0.5rem;
+   }
+   
+   /* Responsive dropdown adjustments */
+   @media (max-width: 1024px) {
+     .dynamic-dropdown {
+       min-width: 10rem !important;
+       max-width: 16rem !important;
+     }
+   }
+   
+   @media (max-width: 768px) {
+     .dynamic-dropdown {
+       min-width: 8rem !important;
+       max-width: 14rem !important;
+     }
+   }
+ `}</style>
  </div>
  );
 }
@@ -1702,6 +2008,8 @@ function BugTable({ bugs, search, statusFilter, assigneeFilter, environmentFilte
  (bug.bugStatus || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.environment || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.rootCause || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.detailedComments || '').toLowerCase().includes(search.toLowerCase()) ||
+ (bug.qaCorrectiveAction || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.correctiveStatus || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.correctiveOwner || '').toLowerCase().includes(search.toLowerCase()) ||
  (bug.lastUpdated || '').toLowerCase().includes(search.toLowerCase())
