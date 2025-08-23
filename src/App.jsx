@@ -1253,7 +1253,7 @@ const handleNextBug = () => {
 };
 
  return (
- <div className={`flex flex-col min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+ <div className={`flex flex-col min-h-screen bg-grid ${darkMode ? 'dark' : ''}`}>
  <DashboardHeader
  tabValue={tabValue}
  setTabValue={setTabValue}
@@ -2137,9 +2137,9 @@ const handleNextBug = () => {
  </TabsList>
  <TabsContent value="tab1">
  {/* ITQA Bugs Distribution box only visible in All Bugs tab */}
- <Card className="p-4 md:p-8 w-full bg-white shadow rounded-lg">
+ <Card variant="glass" className="p-6 md:p-8 w-full animate-fade-in">
  <CardContent>
- <h2 className="text-lg font-bold mb-4 text-black">ITQA Bugs Distribution</h2>
+ <h2 className="text-2xl font-bold mb-6 text-gradient text-center">ITQA Bugs Distribution</h2>
  <div className="flex gap-4 items-center mb-4">
  {/* Removed Excel upload input from here */}
  </div>
@@ -2212,20 +2212,20 @@ const handleNextBug = () => {
  {/* Bugs List only visible in Bugs List tab */}
  <Card variant="glass" className="animate-fade-in">
  <CardContent>
- <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-blue-100">ITQA Team Bugs</h2>
- <div className="flex flex-wrap gap-4 mb-4 items-center">
+ <h2 className="text-xl font-bold mb-6 text-gradient">ITQA Team Bugs</h2>
+ <div className="flex flex-wrap gap-4 mb-6 items-center">
  <input
  type="text"
  value={search}
  onChange={e => setSearch(e.target.value)}
  placeholder="Search by text..."
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ className="glass-card px-4 py-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400/30 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300 min-w-[200px]"
  aria-label="Search bugs by text"
  />
  <select
  value={statusFilter}
  onChange={e => setStatusFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ className="glass-card px-4 py-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400/30 text-gray-900 dark:text-white transition-all duration-300 cursor-pointer"
  aria-label="Filter by corrective action status"
  >
  <option value="">All Statuses</option>
@@ -2236,7 +2236,7 @@ const handleNextBug = () => {
  <select
  value={assigneeFilter}
  onChange={e => setAssigneeFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ className="glass-card px-4 py-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400/30 text-gray-900 dark:text-white transition-all duration-300 cursor-pointer"
  aria-label="Filter by assignee"
  >
  <option value="">All Assignees</option>
@@ -2248,7 +2248,7 @@ const handleNextBug = () => {
  <select
  value={environmentFilter}
  onChange={e => setEnvironmentFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ className="glass-card px-4 py-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400/30 text-gray-900 dark:text-white transition-all duration-300 cursor-pointer"
  aria-label="Filter by environment"
  >
  <option value="">All Environments</option>
@@ -2259,7 +2259,7 @@ const handleNextBug = () => {
  <select
  value={bugIdFilter}
  onChange={e => setBugIdFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ className="glass-card px-4 py-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400/30 text-gray-900 dark:text-white transition-all duration-300 cursor-pointer"
  aria-label="Filter by Bug ID"
  >
  <option value="">All Bugs</option>
@@ -2686,15 +2686,14 @@ function BugTable({ bugs, search, statusFilter, assigneeFilter, environmentFilte
  }
  };
  return (
- <div className="overflow-x-auto">
- <table className="min-w-full text-sm text-left text-gray-900 bg-white border" style={{ backgroundColor: '#fff' }}>
- <thead className="bg-gray-100">
+ <div className="overflow-x-auto rounded-xl">
+ <table className="min-w-full text-sm text-left text-gray-900 dark:text-gray-100 glass-card">
+ <thead className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/50 dark:to-purple-900/50">
  <tr>
  {bugsListFields.map(field => (
  <th
  key={field.key}
- className="px-4 py-2 cursor-pointer"
- style={{ backgroundColor: '#fff', color: '#222' }}
+ className="px-6 py-4 cursor-pointer font-semibold text-gray-800 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors duration-200"
  title={field.desc}
  >
  {field.label}
@@ -2702,19 +2701,29 @@ function BugTable({ bugs, search, statusFilter, assigneeFilter, environmentFilte
  ))}
  </tr>
  </thead>
- <tbody>
+ <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
  {filtered.map((bug, idx) => (
- <tr key={idx} className="border-b" style={{ backgroundColor: '#fff', color: '#222' }}>
+ <tr key={idx} className="hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all duration-200 transform hover:scale-[1.01]">
  {bugsListFields.map(field => (
- <td key={field.key} className="px-4 py-2" style={{ backgroundColor: '#fff', color: '#222' }}>{
+ <td key={field.key} className="px-6 py-4 text-gray-700 dark:text-gray-300">{
  field.key === 'incidentId'
- ? <button className="text-blue-700 underline" onClick={() => { setSelectedBug(bug); setTabValue('tab1'); }}>{bug[field.key]}</button>
+ ? <Button variant="ghost" size="sm" onClick={() => { setSelectedBug(bug); setTabValue('tab1'); }} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium">{bug[field.key]}</Button>
  : bug[field.key]
  }</td>
  ))}
  </tr>
  ))}
- {filtered.length === 0 && <tr><td colSpan={bugsListFields.length} className="text-center text-gray-400 py-8">No bugs found.</td></tr>}
+ {filtered.length === 0 && (
+ <tr>
+ <td colSpan={bugsListFields.length} className="text-center text-gray-400 dark:text-gray-500 py-12">
+ <div className="flex flex-col items-center gap-4">
+ <div className="text-4xl opacity-50">📋</div>
+ <div className="text-lg font-medium">No bugs found</div>
+ <div className="text-sm">Try adjusting your search criteria</div>
+ </div>
+ </td>
+ </tr>
+ )}
  </tbody>
  </table>
  </div>
