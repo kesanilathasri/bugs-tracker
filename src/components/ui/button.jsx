@@ -12,7 +12,8 @@ export function Button({
   const baseClasses = "font-semibold rounded-xl transition-all duration-300 ease-out transform active:scale-95 disabled:opacity-50 disabled:cursor-not-allowed inline-flex items-center justify-center gap-2";
   
   const variants = {
-    default: "btn-modern text-white hover:scale-105",
+  // Leave text color to CSS (.btn-modern) so we can switch per light/dark mode
+  default: "btn-modern hover:scale-105",
     outline: "border-2 border-blue-500 text-blue-500 hover:bg-blue-500 hover:text-white hover:scale-105 bg-transparent dark:border-blue-400 dark:text-blue-400 dark:hover:bg-blue-400 dark:hover:text-gray-900",
     ghost: "bg-transparent hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-300 hover:scale-105",
     glass: "glass-card text-gray-800 dark:text-white hover:bg-white/30 dark:hover:bg-black/30 hover:scale-105",
