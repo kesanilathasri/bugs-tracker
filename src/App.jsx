@@ -1,5 +1,5 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent, TabsWrapper } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useState, useEffect, useMemo } from "react";
@@ -159,51 +159,72 @@ const getInitialBugs = () => {
 // Move header bar outside the main content and make it always visible
 function DashboardHeader({ tabValue, setTabValue, darkMode, setDarkMode, search, setSearch, headerTitle, setSelectedAssignee, handleGlobalSearch, showDashboardButton }) {
   return (
-    <header className="w-full flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 bg-white dark:bg-gray-800 shadow z-10">
-      <div className="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
-        {showDashboardButton && (
-          <Button onClick={() => { setTabValue('tab1'); setSelectedAssignee(null); setSearch(''); }} aria-label="Go to Bugs Dashboard" tabIndex={0}>Bugs Dashboard</Button>
-        )}
-      </div>
-      <div className="flex-grow flex justify-center items-center">
-        <div className="bg-blue-100 dark:bg-blue-900 dark:text-blue-100 text-blue-900 font-bold text-xl md:text-2xl px-6 md:px-10 py-2 rounded-full shadow-md min-w-[200px] md:min-w-[320px] text-center mx-auto" style={{ outline: 'none' }} tabIndex={0} aria-label="ITQA Bugs Dashboard heading">
-          {headerTitle}
+    <header className="sticky top-0 z-50 w-full glass-card shadow-lg dark:shadow-glass-dark mb-8">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 md:p-6">
+        <div className="flex items-center gap-4">
+          {showDashboardButton && (
+            <Button 
+              variant="glass" 
+              size="sm"
+              onClick={() => { setTabValue('tab1'); setSelectedAssignee(null); setSearch(''); }}
+              className="whitespace-nowrap flex items-center gap-2"
+              aria-label="Go to Bugs Dashboard" 
+              tabIndex={0}
+            >
+              <FaArrowCircleLeft className="w-4 h-4" />
+              Bugs Dashboard
+            </Button>
+          )}
         </div>
-      </div>
-      <div className="flex items-center justify-end mt-4 md:mt-0 w-full md:w-auto gap-4">
-        {/* Dark mode toggle switch */}
-        <div className="flex items-center mr-2">
-          <span className="mr-2 text-xl">☀️</span>
-          <button
-            onClick={() => setDarkMode((d) => !d)}
-            className={`relative inline-flex items-center h-6 rounded-full w-12 transition-colors focus:outline-none border border-gray-300 dark:border-gray-600 ${darkMode ? 'bg-gray-700' : 'bg-gray-300'}`}
-            aria-label="Toggle dark mode"
-            tabIndex={0}
-          >
-            <span
-              className={`inline-block w-5 h-5 transform bg-white rounded-full shadow transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-1'}`}
+        <div className="flex-grow flex justify-center items-center">
+          <div className="glass-card bg-gradient-to-r from-blue-100/80 to-purple-100/80 dark:from-blue-900/80 dark:to-purple-900/80 text-gradient font-bold text-xl md:text-2xl px-6 md:px-10 py-3 rounded-2xl shadow-lg min-w-[200px] md:min-w-[320px] text-center mx-auto floating-element" 
+               style={{ outline: 'none' }} 
+               tabIndex={0} 
+               aria-label="ITQA Bugs Dashboard heading">
+            {headerTitle}
+          </div>
+        </div>
+        <div className="flex items-center justify-end mt-4 md:mt-0 w-full md:w-auto gap-6">
+          {/* Dark mode toggle switch */}
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">☀️</span>
+            <button
+              onClick={() => setDarkMode((d) => !d)}
+              className={`relative inline-flex items-center h-8 rounded-full w-14 transition-all duration-300 ease-out focus:outline-none focus:ring-4 focus:ring-blue-400/30 ${
+                darkMode 
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 shadow-neon' 
+                  : 'bg-gradient-to-r from-gray-200 to-gray-300 shadow-lg'
+              }`}
+              aria-label="Toggle dark mode"
+              tabIndex={0}
+            >
+              <span
+                className={`inline-block w-6 h-6 transform bg-white rounded-full shadow-lg transition-all duration-300 ease-out ${
+                  darkMode ? 'translate-x-7 shadow-neon' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className="text-2xl">🌙</span>
+          </div>
+          {/* Enhanced Search bar */}
+          <div className="relative w-full md:w-64">
+            <input
+              id="global-search"
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={handleGlobalSearch}
+              placeholder="Search..."
+              className="glass-card w-full pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400/30 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300"
+              aria-label="Search bugs"
+              tabIndex={0}
             />
-          </button>
-          <span className="ml-2 text-xl">🌙</span>
-        </div>
-        {/* Search bar */}
-        <div className="relative w-full md:w-56">
-          <input
-            id="global-search"
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            onKeyDown={handleGlobalSearch}
-            placeholder="Search..."
-            className="border rounded pl-10 pr-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-700 focus-visible:ring-4 focus-visible:ring-blue-400 w-full bg-white text-gray-900"
-            aria-label="Search bugs"
-            tabIndex={0}
-          />
-          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4-4m0 0A7 7 0 104 4a7 7 0 0013 13z" />
-            </svg>
-          </span>
+            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4-4m0 0A7 7 0 104 4a7 7 0 0013 13z" />
+              </svg>
+            </span>
+          </div>
         </div>
       </div>
     </header>
@@ -1936,7 +1957,7 @@ const handleNextBug = () => {
 >
   <FaArrowLeft className="inline mr-2" />Back
 </button>
- <Card className="bg-white dark:bg-gray-800 shadow rounded-lg w-full max-w-6xl">
+ <Card variant="3d" className="w-full max-w-6xl animate-slide-up">
  <CardContent>
  <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-blue-100">ITQA Team Bugs - {selectedAssignee}</h2>
  <div className="flex flex-wrap gap-4 mb-4 items-center">
@@ -2093,7 +2114,7 @@ const handleNextBug = () => {
  ) : (
  <div className="flex flex-col md:flex-row flex-1">
  {/* Main Dashboard Section */}
- <div className="flex flex-col items-start w-full md:w-3/4 p-4 md:p-8 bg-white dark:bg-gray-800 shadow-md rounded-lg m-0 md:m-8">
+ <div className="glass-card shadow-3d dark:shadow-3d-dark rounded-2xl p-6 md:p-8 m-4 md:m-8 w-full md:w-3/4 animate-fade-in">
  <div className="border-b border-gray-200 dark:border-gray-700 w-full mb-4 md:mb-6"></div>
 
  <Tabs className="w-full mt-2">
@@ -2124,37 +2145,40 @@ const handleNextBug = () => {
  </div>
  <div className="flex gap-8 mb-8 justify-evenly w-full">
   {/* For Current Week Pie Chart: */}
-  <Card className="p-6 flex flex-col items-center w-[420px] bg-white shadow rounded-lg">
-    <h3 className="text-lg font-bold mb-4">Current Week Bugs</h3>
-    <PieChart width={400} height={300}>
-      <Pie
-        data={dataCurrentWeek}
-        cx="50%"
-        cy="50%"
-        labelLine={false}
-        outerRadius={110}
-        innerRadius={55}
-        fill="#8884d8"
-        dataKey="value"
-        nameKey="name"
-        onClick={(_, idx) => {
-          if (idx != null && dataCurrentWeek[idx]) {
-            handlePieClick('current', dataCurrentWeek[idx].name);
-          }
-        }}
-      >
-        {dataCurrentWeek.map((entry, index) => (
-          <Cell key={`cell-${index}`} fill={getOwnerColor(entry.name, index)} />
-        ))}
-      </Pie>
-      <Tooltip content={props => <CustomTooltip {...props} total={dataCurrentWeek.reduce((sum, e) => sum + e.value, 0)} />} />
-    </PieChart>
+  <Card variant="3d" className="p-6 flex flex-col items-center w-[420px] animate-scale-in">
+    <CardTitle className="mb-6 text-center">Current Week Bugs</CardTitle>
+    <div className="relative">
+      <PieChart width={400} height={300}>
+        <Pie
+          data={dataCurrentWeek}
+          cx="50%"
+          cy="50%"
+          labelLine={false}
+          outerRadius={110}
+          innerRadius={55}
+          fill="#8884d8"
+          dataKey="value"
+          nameKey="name"
+          onClick={(_, idx) => {
+            if (idx != null && dataCurrentWeek[idx]) {
+              handlePieClick('current', dataCurrentWeek[idx].name);
+            }
+          }}
+        >
+          {dataCurrentWeek.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={getOwnerColor(entry.name, index)} />
+          ))}
+        </Pie>
+        <Tooltip content={props => <CustomTooltip {...props} total={dataCurrentWeek.reduce((sum, e) => sum + e.value, 0)} />} />
+      </PieChart>
+    </div>
     <PieChartLegend data={dataCurrentWeek} total={dataCurrentWeek.reduce((sum, e) => sum + e.value, 0)} />
   </Card>
   {/* For Bugs Up to Last Week Pie Chart: */}
-  <Card className="p-6 flex flex-col items-center w-[420px] bg-white shadow rounded-lg">
-    <h3 className="text-lg font-bold mb-4">Bugs Up to Last Week</h3>
-    <PieChart width={400} height={300}>
+  <Card variant="3d" className="p-6 flex flex-col items-center w-[420px] animate-scale-in" style={{animationDelay: '0.2s'}}>
+    <CardTitle className="mb-6 text-center">Bugs Up to Last Week</CardTitle>
+    <div className="relative">
+      <PieChart width={400} height={300}>
       <Pie
         data={dataLastWeek}
         cx="50%"
@@ -2177,6 +2201,7 @@ const handleNextBug = () => {
       </Pie>
       <Tooltip content={props => <CustomTooltip {...props} total={dataLastWeek.reduce((sum, e) => sum + e.value, 0)} />} />
     </PieChart>
+    </div>
     <PieChartLegend data={dataLastWeek} total={dataLastWeek.reduce((sum, e) => sum + e.value, 0)} />
   </Card>
 </div>
@@ -2185,7 +2210,7 @@ const handleNextBug = () => {
  </TabsContent>
  <TabsContent value="tab2">
  {/* Bugs List only visible in Bugs List tab */}
- <Card className="bg-white dark:bg-gray-800 shadow rounded-lg">
+ <Card variant="glass" className="animate-fade-in">
  <CardContent>
  <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-blue-100">ITQA Team Bugs</h2>
  <div className="flex flex-wrap gap-4 mb-4 items-center">
@@ -2262,21 +2287,24 @@ const handleNextBug = () => {
  </div>
  {/* Divider and right panel unchanged... */}
  {/* Right Action Panel */}
- <div className="hidden md:block w-0.5 bg-gray-200 h-full mx-2"></div>
+ <div className="hidden md:block w-px bg-gradient-to-b from-transparent via-gray-300 dark:via-gray-600 to-transparent h-full mx-4"></div>
  <div className="flex flex-col flex-1 h-full p-4 md:p-8 overflow-x-auto md:overflow-y-auto">
  {/* Centered Action Boxes */}
  <div className="flex flex-col items-center justify-center flex-1 gap-8 mx-auto">
- {/* Upload Excel Button with drag-and-drop and tooltip */}
- <div
-    className={`w-48 h-48 md:w-56 md:h-56 bg-white border rounded-lg shadow flex flex-col items-center justify-center transition-colors duration-200 ${dragActive ? 'border-4 border-green-400 bg-green-50' : ''}`}
+ {/* Upload Excel Button with drag-and-drop and enhanced styling */}
+ <Card 
+    variant="glass"
+    className={`w-56 h-56 md:w-64 md:h-64 card-3d flex flex-col items-center justify-center transition-all duration-300 cursor-pointer ${
+      dragActive ? 'border-4 border-green-400 bg-green-50/30 dark:bg-green-900/30 scale-105' : ''
+    }`}
     onDragOver={handleDragOver}
     onDragLeave={handleDragLeave}
     onDrop={handleDrop}
     aria-label="Upload Excel file (sets Current Week). Drag and drop supported."
     tabIndex={0}
   >
-    <div className="mb-2 text-center text-xs text-gray-600 px-3">Upload Excel to set Current Week bugs.</div>
-    <label className="inline-flex items-center px-4 py-2 bg-green-700 text-white rounded cursor-pointer hover:bg-green-800 transition disabled:opacity-60 focus-visible:ring-4 focus-visible:ring-green-300" aria-label="Upload Excel file" tabIndex={0} title="Upload Excel to set Current Week Bugs">
+    <div className="mb-4 text-center text-sm text-gray-600 dark:text-gray-300 px-4 font-medium">Upload Excel to set Current Week bugs.</div>
+    <label className="btn-modern text-white cursor-pointer disabled:opacity-60 focus-visible:ring-4 focus-visible:ring-green-300 flex items-center gap-3" aria-label="Upload Excel file" tabIndex={0} title="Upload Excel to set Current Week Bugs">
       <input 
   type="file" 
   accept=".xlsx,.xls" 
@@ -2294,31 +2322,46 @@ const handleNextBug = () => {
     }
   }}
 />
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
       </svg>
       {uploadLoading ? <span className="flex items-center"><span className="loader mr-2"></span>Uploading...</span> : "Upload Excel"}
     </label>
-    <button onClick={clearAllBugs} title="Clear all stored bugs (Current Week and Last Week)" className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"><FaTrash className="inline mr-2" />Clear All Bugs</button>
-    <div className="mt-3 text-center text-xs text-gray-600 px-3" title="Removes both Current Week and Bugs up to Last Week from local storage.">Clear All removes all stored bugs.</div>
-  </div>
-  {/* Extract Bugs Button with tooltip */}
-  <div className="w-48 h-48 md:w-56 md:h-56 bg-white border rounded-lg shadow flex flex-col items-center justify-center" title="Extract and download the Weekly Bugs Summary (Open status only)." aria-label="Download Weekly Bugs Summary" tabIndex={0}>
-    <button
+    <Button 
+      onClick={clearAllBugs} 
+      variant="danger" 
+      size="sm"
+      title="Clear all stored bugs (Current Week and Last Week)" 
+      className="mt-4"
+    >
+      <FaTrash className="w-4 h-4" />Clear All Bugs
+    </Button>
+    <div className="mt-3 text-center text-xs text-gray-500 dark:text-gray-400 px-3" title="Removes both Current Week and Bugs up to Last Week from local storage.">Clear All removes all stored bugs.</div>
+  </Card>
+  {/* Extract Bugs Button with enhanced styling */}
+  <Card 
+    variant="glass" 
+    className="w-56 h-56 md:w-64 md:h-64 card-3d flex flex-col items-center justify-center" 
+    title="Extract and download the Weekly Bugs Summary (Open status only)." 
+    aria-label="Download Weekly Bugs Summary" 
+    tabIndex={0}
+  >
+    <Button
       onClick={handleSendSummary}
-      className="inline-flex items-center px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 transition disabled:opacity-60 focus-visible:ring-4 focus-visible:ring-blue-300"
+      variant="neon"
       disabled={extractLoading}
       aria-label="Download Weekly Bugs Summary"
       title="Download an Excel with Open bugs for Current Week and Bugs up to Last Week"
       tabIndex={0}
+      className="flex items-center gap-3"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m8 0a4 4 0 11-8 0 4 4 0 018 0zm0 0v4m0-4V8" />
       </svg>
       {extractLoading ? <span className="flex items-center"><span className="loader mr-2"></span>Extracting...</span> : "Extract Bugs"}
-    </button>
-    <div className="mt-3 text-center text-xs text-gray-600 px-3">Download Weekly Bugs Summary</div>
-  </div>
+    </Button>
+    <div className="mt-3 text-center text-sm text-gray-500 dark:text-gray-400 px-3 font-medium">Download Weekly Bugs Summary</div>
+  </Card>
  </div>
  </div>
  </div>
