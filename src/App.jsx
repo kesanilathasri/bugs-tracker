@@ -1,5 +1,5 @@
 import { Tabs, TabsList, TabsTrigger, TabsContent, TabsWrapper } from "@/components/ui/tabs";
-import { Card, CardContent } from "@/components/ui/card";
+import { Card, CardContent, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { PieChart, Pie, Cell, Tooltip, Legend, ResponsiveContainer } from "recharts";
 import { useState, useEffect, useMemo } from "react";
@@ -159,51 +159,72 @@ const getInitialBugs = () => {
 // Move header bar outside the main content and make it always visible
 function DashboardHeader({ tabValue, setTabValue, darkMode, setDarkMode, search, setSearch, headerTitle, setSelectedAssignee, handleGlobalSearch, showDashboardButton }) {
   return (
-    <header className="w-full flex flex-col md:flex-row items-center justify-between px-4 md:px-8 py-4 bg-white dark:bg-gray-800 shadow z-10">
-      <div className="flex items-center gap-4 w-full md:w-auto justify-center md:justify-start">
-        {showDashboardButton && (
-          <Button onClick={() => { setTabValue('tab1'); setSelectedAssignee(null); setSearch(''); }} aria-label="Go to Bugs Dashboard" tabIndex={0}>Bugs Dashboard</Button>
-        )}
-      </div>
-      <div className="flex-grow flex justify-center items-center">
-        <div className="bg-blue-100 dark:bg-blue-900 dark:text-blue-100 text-blue-900 font-bold text-xl md:text-2xl px-6 md:px-10 py-2 rounded-full shadow-md min-w-[200px] md:min-w-[320px] text-center mx-auto" style={{ outline: 'none' }} tabIndex={0} aria-label="ITQA Bugs Dashboard heading">
-          {headerTitle}
+    <header className="sticky top-0 z-50 w-full glass-card shadow-lg dark:shadow-glass-dark mb-8">
+      <div className="flex flex-col md:flex-row items-center justify-between gap-4 p-4 md:p-6">
+        <div className="flex items-center gap-4">
+          {showDashboardButton && (
+            <Button 
+              variant="glass" 
+              size="sm"
+              onClick={() => { setTabValue('tab1'); setSelectedAssignee(null); setSearch(''); }}
+              className="whitespace-nowrap flex items-center gap-2"
+              aria-label="Go to Bugs Dashboard" 
+              tabIndex={0}
+            >
+              <FaArrowCircleLeft className="w-4 h-4" />
+              Bugs Dashboard
+            </Button>
+          )}
         </div>
-      </div>
-      <div className="flex items-center justify-end mt-4 md:mt-0 w-full md:w-auto gap-4">
-        {/* Dark mode toggle switch */}
-        <div className="flex items-center mr-2">
-          <span className="mr-2 text-xl">☀️</span>
-          <button
-            onClick={() => setDarkMode((d) => !d)}
-            className={`relative inline-flex items-center h-6 rounded-full w-12 transition-colors focus:outline-none border border-gray-300 dark:border-gray-600 ${darkMode ? 'bg-gray-700' : 'bg-gray-300'}`}
-            aria-label="Toggle dark mode"
-            tabIndex={0}
-          >
-            <span
-              className={`inline-block w-5 h-5 transform bg-white rounded-full shadow transition-transform ${darkMode ? 'translate-x-6' : 'translate-x-1'}`}
+        <div className="flex-grow flex justify-center items-center">
+          <div className="glass-card bg-gradient-to-r from-blue-100/80 to-purple-100/80 dark:from-blue-900/80 dark:to-purple-900/80 text-gradient font-bold text-xl md:text-2xl px-6 md:px-10 py-3 rounded-2xl shadow-lg min-w-[200px] md:min-w-[320px] text-center mx-auto floating-element" 
+               style={{ outline: 'none' }} 
+               tabIndex={0} 
+               aria-label="ITQA Bugs Dashboard heading">
+            {headerTitle}
+          </div>
+        </div>
+        <div className="flex items-center justify-end mt-4 md:mt-0 w-full md:w-auto gap-6">
+          {/* Dark mode toggle switch */}
+          <div className="flex items-center gap-3">
+            <span className="text-2xl">☀️</span>
+            <button
+              onClick={() => setDarkMode((d) => !d)}
+              className={`relative inline-flex items-center h-8 rounded-full w-14 transition-all duration-300 ease-out focus:outline-none focus:ring-4 focus:ring-blue-400/30 ${
+                darkMode 
+                  ? 'bg-gradient-to-r from-blue-600 to-purple-600 shadow-neon' 
+                  : 'bg-gradient-to-r from-gray-200 to-gray-300 shadow-lg'
+              }`}
+              aria-label="Toggle dark mode"
+              tabIndex={0}
+            >
+              <span
+                className={`inline-block w-6 h-6 transform bg-white rounded-full shadow-lg transition-all duration-300 ease-out ${
+                  darkMode ? 'translate-x-7 shadow-neon' : 'translate-x-1'
+                }`}
+              />
+            </button>
+            <span className="text-2xl">🌙</span>
+          </div>
+          {/* Enhanced Search bar */}
+          <div className="relative w-full md:w-64">
+            <input
+              id="global-search"
+              type="text"
+              value={search}
+              onChange={e => setSearch(e.target.value)}
+              onKeyDown={handleGlobalSearch}
+              placeholder="Search..."
+              className="glass-card w-full pl-12 pr-4 py-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400/30 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300"
+              aria-label="Search bugs"
+              tabIndex={0}
             />
-          </button>
-          <span className="ml-2 text-xl">🌙</span>
-        </div>
-        {/* Search bar */}
-        <div className="relative w-full md:w-56">
-          <input
-            id="global-search"
-            type="text"
-            value={search}
-            onChange={e => setSearch(e.target.value)}
-            onKeyDown={handleGlobalSearch}
-            placeholder="Search..."
-            className="border rounded pl-10 pr-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-700 focus-visible:ring-4 focus-visible:ring-blue-400 w-full bg-white text-gray-900"
-            aria-label="Search bugs"
-            tabIndex={0}
-          />
-          <span className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 pointer-events-none">
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4-4m0 0A7 7 0 104 4a7 7 0 0013 13z" />
-            </svg>
-          </span>
+            <span className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 pointer-events-none">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-4-4m0 0A7 7 0 104 4a7 7 0 0013 13z" />
+              </svg>
+            </span>
+          </div>
         </div>
       </div>
     </header>
@@ -234,7 +255,7 @@ export default function BugsDashboard() {
  'Not QA Tested',
  ]));
  const [correctiveStatusOptions, setCorrectiveStatusOptions] = useState(() => getStoredOptions('options_correctiveStatus', ['Open', 'Closed']));
- const [correctiveOwnerOptions, setCorrectiveOwnerOptions] = useState(() => getStoredOptions('options_correctiveOwner', ['Unassigned', 'Navya', 'Amogh', 'Monisha', 'Raju', 'Janani', 'Mohith', 'Akhil', 'Latha Sri', 'Hemalatha']));
+ const [correctiveOwnerOptions, setCorrectiveOwnerOptions] = useState(() => getStoredOptions('options_correctiveOwner', ['Unassigned', 'Navya', 'Amogh', 'Monisha', 'Raju', 'Janani', 'Mohith', 'Akhil', 'Latha Sri', 'Hemalatha', 'Gibreel']));
 
 // Dropdown open/close states
 const [environmentDropdownOpen, setEnvironmentDropdownOpen] = useState(false);
@@ -256,7 +277,14 @@ const [correctiveOwnerDropdownOpen, setCorrectiveOwnerDropdownOpen] = useState(f
  const [dragActive, setDragActive] = useState(false);
  const [statusFilter, setStatusFilter] = useState("");
  const [assigneeFilter, setAssigneeFilter] = useState("");
- const [darkMode, setDarkMode] = useState(false);
+ // Default to dark mode on first load; respect saved preference if present
+ const [darkMode, setDarkMode] = useState(() => {
+   try {
+     const saved = localStorage.getItem('itqa_dark');
+     if (saved !== null) return saved === 'true';
+   } catch {}
+   return true; // default: dark mode enabled
+ });
  const [deletedBug, setDeletedBug] = useState(null);
  const [deletedTimeout, setDeletedTimeout] = useState(null);
  // For Bug Details screen
@@ -272,6 +300,32 @@ const [correctiveOwnerDropdownOpen, setCorrectiveOwnerDropdownOpen] = useState(f
  const [attachments, setAttachments] = useState([]);
  const [showAttachmentsModal, setShowAttachmentsModal] = useState(false);
  const [attachmentUploadLoading, setAttachmentUploadLoading] = useState(false);
+
+ // Ensure new owner names are present for existing users with older saved lists
+ useEffect(() => {
+   try {
+     const saved = localStorage.getItem('options_correctiveOwner');
+     const arr = saved ? JSON.parse(saved) : correctiveOwnerOptions;
+     if (Array.isArray(arr)) {
+       const merged = Array.from(new Set([...arr, 'Gibreel']));
+       if (merged.length !== arr.length) {
+         setCorrectiveOwnerOptions(merged);
+         localStorage.setItem('options_correctiveOwner', JSON.stringify(merged));
+       }
+     }
+   } catch {}
+   // run once on mount
+   // eslint-disable-next-line react-hooks/exhaustive-deps
+ }, []);
+
+ // Keep dark class in sync globally and persist preference
+ useEffect(() => {
+   try {
+     document.body.classList.toggle('dark', darkMode);
+     document.documentElement.classList.toggle('dark', darkMode);
+     localStorage.setItem('itqa_dark', String(darkMode));
+   } catch {}
+ }, [darkMode]);
 
  // Add the hook here:
  const [searchResultCount, setSearchResultCount] = useState(null);
@@ -1232,7 +1286,7 @@ const handleNextBug = () => {
 };
 
  return (
- <div className={`flex flex-col min-h-screen ${darkMode ? 'dark bg-gray-900' : 'bg-gray-50'}`}>
+ <div className={`flex flex-col min-h-screen bg-grid ${darkMode ? 'dark' : ''} bg-slate-900/40 dark:bg-slate-950/60 text-gray-900 dark:text-gray-100`}>
  <DashboardHeader
  tabValue={tabValue}
  setTabValue={setTabValue}
@@ -1261,14 +1315,14 @@ const handleNextBug = () => {
  <Button onClick={handleNextBug} disabled={!hasNextBug}><FaArrowRight className="inline mr-2" />Next</Button>
  </div>
  </div>
- <Card className="bg-white shadow rounded-lg w-full max-w-6xl">
+ <Card className="bg-white dark:bg-gray-800/90 text-gray-900 dark:text-gray-100 shadow rounded-lg w-full max-w-6xl">
  <CardContent>
  <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
  <div>
   <b>Application</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      className="border rounded px-2 py-1 cursor-pointer bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
       style={{ 
         width: 'auto',
         overflow: 'hidden',
@@ -1277,7 +1331,7 @@ const handleNextBug = () => {
       onClick={() => setApplicationDropdownOpen(!applicationDropdownOpen)}
     >
       <span 
-        className={editBug.application ? 'text-black' : 'text-gray-500'} 
+        className={editBug.application ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'} 
         style={{ 
           minWidth: '8rem',
           maxWidth: 'calc(100% - 2rem)',
@@ -1289,13 +1343,13 @@ const handleNextBug = () => {
       >
         {editBug.application || 'Select one Option'}
       </span>
-      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
+      <span className="text-gray-400 dark:text-gray-300 ml-2 flex-shrink-0">▼</span>
  </div>
     
     {applicationDropdownOpen && (
-      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
+   <div className="absolute top-full left-0 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {applicationOptions.map(opt => (
-          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700">
             <span
               className="flex-1 cursor-pointer py-1"
               onClick={() => {
@@ -1326,7 +1380,7 @@ const handleNextBug = () => {
           </div>
         ))}
         <div
-          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-blue-600 dark:text-blue-400 border-t border-gray-200 dark:border-gray-700"
           onClick={() => {
             const input = window.prompt('Enter new Application');
             const val = (input || '').trim();
@@ -1351,7 +1405,7 @@ const handleNextBug = () => {
   <b>Environment</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      className="border rounded px-2 py-1 cursor-pointer bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
       style={{ 
         width: 'auto',
         overflow: 'hidden',
@@ -1360,7 +1414,7 @@ const handleNextBug = () => {
       onClick={() => setEnvironmentDropdownOpen(!environmentDropdownOpen)}
     >
       <span 
-        className={editBug.environment ? 'text-black' : 'text-gray-500'} 
+        className={editBug.environment ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'} 
         style={{ 
           minWidth: '8rem',
           maxWidth: 'calc(100% - 2rem)',
@@ -1372,13 +1426,13 @@ const handleNextBug = () => {
       >
         {editBug.environment || 'Select one Option'}
       </span>
-      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
+      <span className="text-gray-400 dark:text-gray-300 ml-2 flex-shrink-0">▼</span>
     </div>
     
     {environmentDropdownOpen && (
-      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
+  <div className="absolute top-full left-0 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {environmentOptions.map(opt => (
-          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700">
             <span
               className="flex-1 cursor-pointer py-1"
               onClick={() => {
@@ -1409,7 +1463,7 @@ const handleNextBug = () => {
           </div>
         ))}
         <div
-          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-blue-600 dark:text-blue-400 border-t border-gray-200 dark:border-gray-700"
           onClick={() => {
             const input = window.prompt('Enter new Environment');
             const val = (input || '').trim();
@@ -1434,7 +1488,7 @@ const handleNextBug = () => {
   <b>Business Function</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      className="border rounded px-2 py-1 cursor-pointer bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
       style={{ 
         width: 'auto',
         overflow: 'hidden',
@@ -1443,7 +1497,7 @@ const handleNextBug = () => {
       onClick={() => setBusinessFunctionDropdownOpen(!businessFunctionDropdownOpen)}
     >
       <span 
-        className={editBug.businessFunction ? 'text-black' : 'text-gray-500'} 
+        className={editBug.businessFunction ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'} 
         style={{ 
           minWidth: '8rem',
           maxWidth: 'calc(100% - 2rem)',
@@ -1455,13 +1509,13 @@ const handleNextBug = () => {
       >
         {editBug.businessFunction || 'Select one Option'}
       </span>
-      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
+      <span className="text-gray-400 dark:text-gray-300 ml-2 flex-shrink-0">▼</span>
     </div>
     
     {businessFunctionDropdownOpen && (
-      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
+  <div className="absolute top-full left-0 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {businessFunctionOptions.map(opt => (
-          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700">
             <span
               className="flex-1 cursor-pointer py-1"
               onClick={() => {
@@ -1492,7 +1546,7 @@ const handleNextBug = () => {
           </div>
         ))}
         <div
-          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-blue-600 dark:text-blue-400 border-t border-gray-200 dark:border-gray-700"
           onClick={() => {
             const input = window.prompt('Enter new Business Function');
             const val = (input || '').trim();
@@ -1517,7 +1571,7 @@ const handleNextBug = () => {
   <b>High Level Root Cause</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      className="border rounded px-2 py-1 cursor-pointer bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
       style={{ 
         width: 'auto',
         overflow: 'hidden',
@@ -1526,7 +1580,7 @@ const handleNextBug = () => {
       onClick={() => setRootCauseDropdownOpen(!rootCauseDropdownOpen)}
     >
       <span 
-        className={editBug.rootCause ? 'text-black' : 'text-gray-500'} 
+        className={editBug.rootCause ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'} 
         style={{ 
           minWidth: '8rem',
           maxWidth: 'calc(100% - 2rem)',
@@ -1538,13 +1592,13 @@ const handleNextBug = () => {
       >
         {editBug.rootCause || 'Select one Option'}
       </span>
-      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
+      <span className="text-gray-400 dark:text-gray-300 ml-2 flex-shrink-0">▼</span>
     </div>
     
     {rootCauseDropdownOpen && (
-      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
+  <div className="absolute top-full left-0 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {rootCauseOptions.map(opt => (
-          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700">
             <span
               className="flex-1 cursor-pointer py-1"
               onClick={() => {
@@ -1575,7 +1629,7 @@ const handleNextBug = () => {
           </div>
         ))}
         <div
-          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-blue-600 dark:text-blue-400 border-t border-gray-200 dark:border-gray-700"
           onClick={() => {
             const input = window.prompt('Enter new High Level Root Cause');
             const val = (input || '').trim();
@@ -1597,13 +1651,13 @@ const handleNextBug = () => {
   </div>
  </div>
  <div>
- <b>Incident/Bug ID</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.incidentId} readOnly />
+ <b>Incident/Bug ID</b> <input className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 w-48 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white" value={editBug.incidentId} readOnly />
  </div>
  <div>
   <b>Corrective Action Status</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      className="border rounded px-2 py-1 cursor-pointer bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
       style={{ 
         width: 'auto',
         overflow: 'hidden',
@@ -1612,7 +1666,7 @@ const handleNextBug = () => {
       onClick={() => setCorrectiveStatusDropdownOpen(!correctiveStatusDropdownOpen)}
     >
       <span 
-        className={editBug.correctiveStatus ? 'text-black' : 'text-gray-500'} 
+        className={editBug.correctiveStatus ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'} 
         style={{ 
           minWidth: '8rem',
           maxWidth: 'calc(100% - 2rem)',
@@ -1624,13 +1678,13 @@ const handleNextBug = () => {
       >
         {editBug.correctiveStatus || 'Select one Option'}
       </span>
-      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
+      <span className="text-gray-400 dark:text-gray-300 ml-2 flex-shrink-0">▼</span>
     </div>
     
     {correctiveStatusDropdownOpen && (
-      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
+  <div className="absolute top-full left-0 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {correctiveStatusOptions.map(opt => (
-          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700">
             <span
               className="flex-1 cursor-pointer py-1"
               onClick={() => {
@@ -1661,7 +1715,7 @@ const handleNextBug = () => {
           </div>
         ))}
         <div
-          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-blue-600 dark:text-blue-400 border-t border-gray-200 dark:border-gray-700"
           onClick={() => {
             const input = window.prompt('Enter new Corrective Action Status');
             const val = (input || '').trim();
@@ -1683,13 +1737,13 @@ const handleNextBug = () => {
   </div>
  </div>
  <div>
- <b>Date Reported</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.dateReported} readOnly />
+ <b>Date Reported</b> <input className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 w-48 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white" value={editBug.dateReported} readOnly />
  </div>
  <div>
   <b>Corrective Action Owner</b>
   <div className="relative inline-block ml-2">
     <div
-      className="border rounded px-2 py-1 cursor-pointer bg-white flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
+      className="border rounded px-2 py-1 cursor-pointer bg-gray-100 dark:bg-gray-700 border-gray-300 dark:border-gray-600 flex items-center justify-between min-w-[12rem] max-w-[20rem] dynamic-dropdown"
       style={{ 
         width: 'auto',
         overflow: 'hidden',
@@ -1698,7 +1752,7 @@ const handleNextBug = () => {
       onClick={() => setCorrectiveOwnerDropdownOpen(!correctiveOwnerDropdownOpen)}
     >
       <span 
-        className={editBug.correctiveOwner ? 'text-black' : 'text-gray-500'} 
+        className={editBug.correctiveOwner ? 'text-gray-900 dark:text-white' : 'text-gray-500 dark:text-gray-300'} 
         style={{ 
           minWidth: '8rem',
           maxWidth: 'calc(100% - 2rem)',
@@ -1710,13 +1764,13 @@ const handleNextBug = () => {
       >
         {editBug.correctiveOwner || 'Select one Option'}
       </span>
-      <span className="text-gray-400 ml-2 flex-shrink-0">▼</span>
+      <span className="text-gray-400 dark:text-gray-300 ml-2 flex-shrink-0">▼</span>
     </div>
     
     {correctiveOwnerDropdownOpen && (
-      <div className="absolute top-full left-0 bg-white border rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
+  <div className="absolute top-full left-0 bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-700 rounded shadow-lg z-10 max-h-48 overflow-y-auto min-w-full">
         {correctiveOwnerOptions.map(opt => (
-          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100">
+          <div key={opt} className="flex items-center justify-between px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700">
             <span
               className="flex-1 cursor-pointer py-1"
               onClick={() => {
@@ -1747,7 +1801,7 @@ const handleNextBug = () => {
           </div>
         ))}
         <div
-          className="px-2 py-1 hover:bg-gray-100 cursor-pointer text-blue-600 border-t"
+          className="px-2 py-1 hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer text-blue-600 dark:text-blue-400 border-t border-gray-200 dark:border-gray-700"
           onClick={() => {
             const input = window.prompt('Enter new Corrective Action Owner');
             const val = (input || '').trim();
@@ -1769,40 +1823,44 @@ const handleNextBug = () => {
   </div>
  </div>
  <div>
- <b>Bug Status</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.bugStatus} readOnly />
+ <b>Bug Status</b> <input className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 w-48 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white" value={editBug.bugStatus} readOnly />
  </div>
  <div>
- <b>Last Updated</b> <input className="border rounded px-2 py-1 w-48 bg-gray-100" value={editBug.lastUpdated} readOnly />
+ <b>Last Updated</b> <input className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 w-48 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white" value={editBug.lastUpdated} readOnly />
  </div>
  </div>
  <div className="mb-4 flex items-center gap-2">
- <b>Bug Description</b> <input className="border rounded px-2 py-1 flex-1 bg-gray-100" value={editBug.bugDescription} readOnly />
+ <b>Bug Description</b> <input className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 flex-1 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white" value={editBug.bugDescription} readOnly />
  </div>
  <div className="mb-4 flex items-center gap-2">
- <b>High Level Root Cause</b> <input className="border rounded px-2 py-1 flex-1 bg-gray-100" value={editBug.rootCause} readOnly />
+ <b>High Level Root Cause</b> <input className="border border-gray-300 dark:border-gray-600 rounded px-2 py-1 flex-1 bg-gray-200 dark:bg-gray-800 text-gray-900 dark:text-white" value={editBug.rootCause} readOnly />
  </div>
  {/* Details Tabs */}
  <div className="mb-4">
- <div className="flex gap-2 mb-2">
- <button
- className={`px-4 py-1 rounded-t ${detailsTab === 'qa' ? 'bg-blue-700 text-white' : 'bg-gray-200 text-gray-700'}`}
- onClick={() => setDetailsTab('qa')}
- >
- QA Corrective Action
- </button>
- <button
- className={`px-4 py-1 rounded-t ${detailsTab === 'comments' ? 'bg-blue-700 text-white' : 'bg-gray-200 text-gray-700'}`}
- onClick={() => setDetailsTab('comments')}
- >
- Detailed Comments
- </button>
+ <div className="flex gap-3 mb-3">
+   <Button
+     size="sm"
+     className={`${detailsTab === 'qa' ? 'ring-2 ring-blue-400/50 dark:ring-blue-500/60 shadow-lg' : 'opacity-90'} whitespace-nowrap`}
+     onClick={() => setDetailsTab('qa')}
+     aria-pressed={detailsTab === 'qa'}
+   >
+     QA Corrective Action
+   </Button>
+   <Button
+     size="sm"
+     className={`${detailsTab === 'comments' ? 'ring-2 ring-blue-400/50 dark:ring-blue-500/60 shadow-lg' : 'opacity-90'} whitespace-nowrap`}
+     onClick={() => setDetailsTab('comments')}
+     aria-pressed={detailsTab === 'comments'}
+   >
+     Detailed Comments
+   </Button>
  </div>
- <div className="border rounded-b bg-white p-4">
+ <div className="border border-gray-200 dark:border-gray-700 rounded-2xl p-4 glass-card bg-gray-100/70 dark:bg-gray-800/80 text-gray-900 dark:text-gray-100">
  {detailsTab === 'qa' ? (
  <div>
  <b>QA Corrective Action:</b>
  <input
- className="border rounded px-2 py-1 w-full mt-2"
+ className="border border-gray-300 dark:border-gray-600 rounded px-2 py-2 w-full mt-2 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
  value={qaCorrectiveAction}
  onChange={e => setQaCorrectiveAction(e.target.value)}
  placeholder="Enter QA Corrective Action..."
@@ -1813,7 +1871,7 @@ const handleNextBug = () => {
  <b>Detailed Comments:</b>
  <div className="flex gap-2 mb-4 mt-2">
  <input
- className="border rounded px-2 py-1 flex-1"
+ className="border border-gray-300 dark:border-gray-600 rounded px-2 py-2 flex-1 bg-gray-100 dark:bg-gray-700 text-gray-900 dark:text-white"
  value={detailedComment}
  onChange={e => setDetailedComment(e.target.value)}
  placeholder="Add a comment..."
@@ -1822,7 +1880,7 @@ const handleNextBug = () => {
  </div>
  <div>
  {comments.map((c, i) => (
- <div key={i} className="border-b py-2 text-sm flex justify-between">
+ <div key={i} className="border-b border-gray-200 dark:border-gray-700 py-2 text-sm flex justify-between">
  <span>{c.text}</span>
  <span className="text-xs text-gray-400">{c.time}</span>
  </div>
@@ -1930,28 +1988,29 @@ const handleNextBug = () => {
  {searchResultCount !== null && (
    <div className="mb-2 text-sm font-semibold text-blue-700">{searchResultCount} result{searchResultCount === 1 ? '' : 's'} found</div>
  )}
- <button
-  className="mb-4 px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-  onClick={() => { setSelectedAssignee(null); setAssigneeFilter(''); setTabValue(previousTab || 'tab1'); setSearchResultCount(null); setSearch(""); }}
->
-  <FaArrowLeft className="inline mr-2" />Back
-</button>
- <Card className="bg-white dark:bg-gray-800 shadow rounded-lg w-full max-w-6xl">
+ <Button
+   onClick={() => { setSelectedAssignee(null); setAssigneeFilter(''); setTabValue(previousTab || 'tab1'); setSearchResultCount(null); setSearch(""); }}
+   className="mb-4"
+   aria-label="Back"
+ >
+   <FaArrowLeft className="inline mr-2" /> Back
+ </Button>
+ <Card variant="glass" className="w-full max-w-6xl animate-fade-in">
  <CardContent>
- <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-blue-100">ITQA Team Bugs - {selectedAssignee}</h2>
+ <h2 className="text-lg font-bold mb-4 text-gradient">ITQA Team Bugs - {selectedAssignee}</h2>
  <div className="flex flex-wrap gap-4 mb-4 items-center">
  <input
  type="text"
  value={search}
  onChange={e => setSearch(e.target.value)}
  placeholder="Search by text..."
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+  className="glass-card px-4 py-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400/30 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300 min-w-[200px]"
  aria-label="Search bugs by text"
  />
  <select
  value={statusFilter}
  onChange={e => setStatusFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+  className="px-4 py-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
  aria-label="Filter by corrective action status"
  >
  <option value="">All Statuses</option>
@@ -1962,7 +2021,7 @@ const handleNextBug = () => {
  <select
  value={environmentFilter}
  onChange={e => setEnvironmentFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+  className="px-4 py-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
  aria-label="Filter by environment"
  >
  <option value="">All Environments</option>
@@ -1973,7 +2032,7 @@ const handleNextBug = () => {
  <select
  value={bugIdFilter}
  onChange={e => setBugIdFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+  className="px-4 py-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
  aria-label="Filter by Bug ID"
  >
  <option value="">All Bugs</option>
@@ -2004,14 +2063,13 @@ const handleNextBug = () => {
  </select>
  </div>
  <div className="overflow-x-auto">
- <table className="min-w-full text-sm text-left text-gray-900 bg-white border" style={{ backgroundColor: '#fff' }}>
- <thead className="bg-gray-100">
+ <table className="min-w-full text-sm text-left text-gray-900 dark:text-gray-100 glass-card rounded-xl overflow-hidden">
+ <thead className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/50 dark:to-purple-900/50">
  <tr>
  {bugsListFields.map(field => (
  <th
  key={field.key}
- className="px-4 py-2 cursor-pointer"
- style={{ backgroundColor: '#fff', color: '#222' }}
+ className="px-6 py-4 cursor-pointer font-semibold text-gray-800 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors duration-200"
  title={field.desc}
  >
  {field.label}
@@ -2019,7 +2077,7 @@ const handleNextBug = () => {
  ))}
  </tr>
  </thead>
- <tbody>
+ <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
  {(pieFilter === 'current' ? currentWeekBugs : lastWeekBugs).filter(bug =>
  bug.correctiveOwner && bug.correctiveOwner.toLowerCase().includes(selectedAssignee.toLowerCase()) &&
  (
@@ -2047,11 +2105,11 @@ const handleNextBug = () => {
  (environmentFilter ? bug.environment === environmentFilter : true) &&
  (bugIdFilter ? bug.incidentId === bugIdFilter : true)
  ).map((bug, idx) => (
- <tr key={idx} className="border-b" style={{ backgroundColor: '#fff', color: '#222' }}>
+ <tr key={idx} className="hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all duration-200 transform hover:scale-[1.01]">
  {bugsListFields.map(field => (
- <td key={field.key} className="px-4 py-2" style={{ backgroundColor: '#fff', color: '#222' }}>{
+ <td key={field.key} className="px-6 py-4 text-gray-700 dark:text-gray-300">{
  field.key === 'incidentId'
- ? <button className="text-blue-700 underline" onClick={() => { setSelectedBug(bug); setTabValue('tab1'); setSearchResultCount(null); setSearch(""); }}>{bug[field.key]}</button>
+ ? <Button variant="ghost" size="sm" onClick={() => { setSelectedBug(bug); setTabValue('tab1'); }} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium">{bug[field.key]}</Button>
  : bug[field.key]
  }</td>
  ))}
@@ -2093,7 +2151,7 @@ const handleNextBug = () => {
  ) : (
  <div className="flex flex-col md:flex-row flex-1">
  {/* Main Dashboard Section */}
- <div className="flex flex-col items-start w-full md:w-3/4 p-4 md:p-8 bg-white dark:bg-gray-800 shadow-md rounded-lg m-0 md:m-8">
+ <div className="glass-card shadow-3d dark:shadow-3d-dark rounded-2xl p-6 md:p-8 m-4 md:m-8 w-full md:w-3/4 animate-fade-in">
  <div className="border-b border-gray-200 dark:border-gray-700 w-full mb-4 md:mb-6"></div>
 
  <Tabs className="w-full mt-2">
@@ -2116,45 +2174,48 @@ const handleNextBug = () => {
  </TabsList>
  <TabsContent value="tab1">
  {/* ITQA Bugs Distribution box only visible in All Bugs tab */}
- <Card className="p-4 md:p-8 w-full bg-white shadow rounded-lg">
+ <Card variant="glass" className="p-6 md:p-8 w-full animate-fade-in">
  <CardContent>
- <h2 className="text-lg font-bold mb-4 text-black">ITQA Bugs Distribution</h2>
+ <h2 className="text-2xl font-bold mb-6 text-gradient text-center">ITQA Bugs Distribution</h2>
  <div className="flex gap-4 items-center mb-4">
  {/* Removed Excel upload input from here */}
  </div>
  <div className="flex gap-8 mb-8 justify-evenly w-full">
   {/* For Current Week Pie Chart: */}
-  <Card className="p-6 flex flex-col items-center w-[420px] bg-white shadow rounded-lg">
-    <h3 className="text-lg font-bold mb-4">Current Week Bugs</h3>
-    <PieChart width={400} height={300}>
-      <Pie
-        data={dataCurrentWeek}
-        cx="50%"
-        cy="50%"
-        labelLine={false}
-        outerRadius={110}
-        innerRadius={55}
-        fill="#8884d8"
-        dataKey="value"
-        nameKey="name"
-        onClick={(_, idx) => {
-          if (idx != null && dataCurrentWeek[idx]) {
-            handlePieClick('current', dataCurrentWeek[idx].name);
-          }
-        }}
-      >
-        {dataCurrentWeek.map((entry, index) => (
-          <Cell key={`cell-${index}`} fill={getOwnerColor(entry.name, index)} />
-        ))}
-      </Pie>
-      <Tooltip content={props => <CustomTooltip {...props} total={dataCurrentWeek.reduce((sum, e) => sum + e.value, 0)} />} />
-    </PieChart>
+  <Card variant="3d" className="p-6 flex flex-col items-center w-[420px] animate-scale-in">
+    <CardTitle className="mb-6 text-center">Current Week Bugs</CardTitle>
+    <div className="relative">
+      <PieChart width={400} height={300}>
+        <Pie
+          data={dataCurrentWeek}
+          cx="50%"
+          cy="50%"
+          labelLine={false}
+          outerRadius={110}
+          innerRadius={55}
+          fill="#8884d8"
+          dataKey="value"
+          nameKey="name"
+          onClick={(_, idx) => {
+            if (idx != null && dataCurrentWeek[idx]) {
+              handlePieClick('current', dataCurrentWeek[idx].name);
+            }
+          }}
+        >
+          {dataCurrentWeek.map((entry, index) => (
+            <Cell key={`cell-${index}`} fill={getOwnerColor(entry.name, index)} />
+          ))}
+        </Pie>
+        <Tooltip content={props => <CustomTooltip {...props} total={dataCurrentWeek.reduce((sum, e) => sum + e.value, 0)} />} />
+      </PieChart>
+    </div>
     <PieChartLegend data={dataCurrentWeek} total={dataCurrentWeek.reduce((sum, e) => sum + e.value, 0)} />
   </Card>
   {/* For Bugs Up to Last Week Pie Chart: */}
-  <Card className="p-6 flex flex-col items-center w-[420px] bg-white shadow rounded-lg">
-    <h3 className="text-lg font-bold mb-4">Bugs Up to Last Week</h3>
-    <PieChart width={400} height={300}>
+  <Card variant="3d" className="p-6 flex flex-col items-center w-[420px] animate-scale-in" style={{animationDelay: '0.2s'}}>
+    <CardTitle className="mb-6 text-center">Bugs Up to Last Week</CardTitle>
+    <div className="relative">
+      <PieChart width={400} height={300}>
       <Pie
         data={dataLastWeek}
         cx="50%"
@@ -2177,6 +2238,7 @@ const handleNextBug = () => {
       </Pie>
       <Tooltip content={props => <CustomTooltip {...props} total={dataLastWeek.reduce((sum, e) => sum + e.value, 0)} />} />
     </PieChart>
+    </div>
     <PieChartLegend data={dataLastWeek} total={dataLastWeek.reduce((sum, e) => sum + e.value, 0)} />
   </Card>
 </div>
@@ -2185,22 +2247,22 @@ const handleNextBug = () => {
  </TabsContent>
  <TabsContent value="tab2">
  {/* Bugs List only visible in Bugs List tab */}
- <Card className="bg-white dark:bg-gray-800 shadow rounded-lg">
+ <Card variant="glass" className="animate-fade-in">
  <CardContent>
- <h2 className="text-lg font-bold mb-4 text-gray-900 dark:text-blue-100">ITQA Team Bugs</h2>
- <div className="flex flex-wrap gap-4 mb-4 items-center">
+ <h2 className="text-xl font-bold mb-6 text-gradient">ITQA Team Bugs</h2>
+ <div className="flex flex-wrap gap-4 mb-6 items-center">
  <input
  type="text"
  value={search}
  onChange={e => setSearch(e.target.value)}
  placeholder="Search by text..."
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ className="glass-card px-4 py-3 rounded-xl focus:outline-none focus:ring-4 focus:ring-blue-400/30 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 transition-all duration-300 min-w-[200px]"
  aria-label="Search bugs by text"
  />
  <select
  value={statusFilter}
  onChange={e => setStatusFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ className="px-4 py-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
  aria-label="Filter by corrective action status"
  >
  <option value="">All Statuses</option>
@@ -2211,19 +2273,19 @@ const handleNextBug = () => {
  <select
  value={assigneeFilter}
  onChange={e => setAssigneeFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ className="px-4 py-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
  aria-label="Filter by assignee"
  >
  <option value="">All Assignees</option>
  <option value="Unassigned">Unassigned</option>
-  {correctiveOwnerOptions.map(opt => (
+  {Array.from(new Set(correctiveOwnerOptions.filter(opt => opt !== 'Unassigned'))).map(opt => (
     <option key={opt} value={opt}>{opt}</option>
   ))}
  </select>
  <select
  value={environmentFilter}
  onChange={e => setEnvironmentFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ className="px-4 py-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
  aria-label="Filter by environment"
  >
  <option value="">All Environments</option>
@@ -2234,7 +2296,7 @@ const handleNextBug = () => {
  <select
  value={bugIdFilter}
  onChange={e => setBugIdFilter(e.target.value)}
- className="border rounded px-3 py-1 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-gray-900"
+ className="px-4 py-3 rounded-xl bg-gray-700 text-white border border-gray-600 focus:outline-none focus:ring-2 focus:ring-blue-400/40"
  aria-label="Filter by Bug ID"
  >
  <option value="">All Bugs</option>
@@ -2262,21 +2324,24 @@ const handleNextBug = () => {
  </div>
  {/* Divider and right panel unchanged... */}
  {/* Right Action Panel */}
- <div className="hidden md:block w-0.5 bg-gray-200 h-full mx-2"></div>
+ <div className="hidden md:block w-px bg-gradient-to-b from-transparent via-gray-300 dark:via-gray-600 to-transparent h-full mx-4"></div>
  <div className="flex flex-col flex-1 h-full p-4 md:p-8 overflow-x-auto md:overflow-y-auto">
  {/* Centered Action Boxes */}
  <div className="flex flex-col items-center justify-center flex-1 gap-8 mx-auto">
- {/* Upload Excel Button with drag-and-drop and tooltip */}
- <div
-    className={`w-48 h-48 md:w-56 md:h-56 bg-white border rounded-lg shadow flex flex-col items-center justify-center transition-colors duration-200 ${dragActive ? 'border-4 border-green-400 bg-green-50' : ''}`}
+ {/* Upload Excel Button with drag-and-drop and enhanced styling */}
+ <Card 
+    variant="glass"
+    className={`w-56 h-56 md:w-64 md:h-64 card-3d flex flex-col items-center justify-center transition-all duration-300 cursor-pointer ${
+      dragActive ? 'border-4 border-green-400 bg-green-50/30 dark:bg-green-900/30 scale-105' : ''
+    }`}
     onDragOver={handleDragOver}
     onDragLeave={handleDragLeave}
     onDrop={handleDrop}
     aria-label="Upload Excel file (sets Current Week). Drag and drop supported."
     tabIndex={0}
   >
-    <div className="mb-2 text-center text-xs text-gray-600 px-3">Upload Excel to set Current Week bugs.</div>
-    <label className="inline-flex items-center px-4 py-2 bg-green-700 text-white rounded cursor-pointer hover:bg-green-800 transition disabled:opacity-60 focus-visible:ring-4 focus-visible:ring-green-300" aria-label="Upload Excel file" tabIndex={0} title="Upload Excel to set Current Week Bugs">
+  <div className="mb-4 text-center text-sm text-black dark:text-white px-4 font-medium">Upload Excel to set Current Week bugs.</div>
+    <label className="btn-modern cursor-pointer disabled:opacity-60 focus-visible:ring-4 focus-visible:ring-green-300 flex items-center gap-3" aria-label="Upload Excel file" tabIndex={0} title="Upload Excel to set Current Week Bugs">
       <input 
   type="file" 
   accept=".xlsx,.xls" 
@@ -2294,31 +2359,44 @@ const handleNextBug = () => {
     }
   }}
 />
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v2a2 2 0 002 2h12a2 2 0 002-2v-2M7 10l5 5m0 0l5-5m-5 5V4" />
       </svg>
       {uploadLoading ? <span className="flex items-center"><span className="loader mr-2"></span>Uploading...</span> : "Upload Excel"}
     </label>
-    <button onClick={clearAllBugs} title="Clear all stored bugs (Current Week and Last Week)" className="mt-4 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 transition"><FaTrash className="inline mr-2" />Clear All Bugs</button>
-    <div className="mt-3 text-center text-xs text-gray-600 px-3" title="Removes both Current Week and Bugs up to Last Week from local storage.">Clear All removes all stored bugs.</div>
-  </div>
-  {/* Extract Bugs Button with tooltip */}
-  <div className="w-48 h-48 md:w-56 md:h-56 bg-white border rounded-lg shadow flex flex-col items-center justify-center" title="Extract and download the Weekly Bugs Summary (Open status only)." aria-label="Download Weekly Bugs Summary" tabIndex={0}>
-    <button
+    <Button 
+      onClick={clearAllBugs} 
+      size="sm"
+      title="Clear all stored bugs (Current Week and Last Week)" 
+      className="mt-4"
+    >
+      <FaTrash className="w-4 h-4" />Clear All Bugs
+    </Button>
+  <div className="mt-3 text-center text-xs text-black dark:text-white px-3" title="Removes both Current Week and Bugs up to Last Week from local storage.">Clear All removes all stored bugs.</div>
+  </Card>
+  {/* Extract Bugs Button with enhanced styling */}
+  <Card 
+    variant="glass" 
+    className="w-56 h-56 md:w-64 md:h-64 card-3d flex flex-col items-center justify-center" 
+    title="Extract and download the Weekly Bugs Summary (Open status only)." 
+    aria-label="Download Weekly Bugs Summary" 
+    tabIndex={0}
+  >
+  <Button
       onClick={handleSendSummary}
-      className="inline-flex items-center px-4 py-2 bg-blue-700 text-white rounded hover:bg-blue-800 transition disabled:opacity-60 focus-visible:ring-4 focus-visible:ring-blue-300"
       disabled={extractLoading}
       aria-label="Download Weekly Bugs Summary"
       title="Download an Excel with Open bugs for Current Week and Bugs up to Last Week"
       tabIndex={0}
+      className="flex items-center gap-3"
     >
-      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12H8m8 0a4 4 0 11-8 0 4 4 0 018 0zm0 0v4m0-4V8" />
       </svg>
       {extractLoading ? <span className="flex items-center"><span className="loader mr-2"></span>Extracting...</span> : "Extract Bugs"}
-    </button>
-    <div className="mt-3 text-center text-xs text-gray-600 px-3">Download Weekly Bugs Summary</div>
-  </div>
+    </Button>
+  <div className="mt-3 text-center text-sm text-black dark:text-white px-3 font-medium">Download Weekly Bugs Summary</div>
+  </Card>
  </div>
  </div>
  </div>
@@ -2327,15 +2405,15 @@ const handleNextBug = () => {
  {/* Attachments Modal */}
  {showAttachmentsModal && (
    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-     <div className="bg-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
+ <div className="bg-white dark:bg-gray-900 text-gray-900 dark:text-white rounded-lg shadow-xl max-w-2xl w-full max-h-[90vh] overflow-hidden">
        {/* Modal Header */}
-       <div className="flex items-center justify-between p-6 border-b border-gray-200">
-         <h2 className="text-xl font-semibold text-gray-900">
+       <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
+        <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
            Manage Attachments - {selectedBug?.incidentId}
          </h2>
          <button
            onClick={() => setShowAttachmentsModal(false)}
-           className="text-gray-400 hover:text-gray-600 transition-colors"
+          className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
          >
            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -2347,8 +2425,8 @@ const handleNextBug = () => {
        <div className="p-6 overflow-y-auto max-h-[calc(90vh-140px)]">
          {/* Upload Section */}
          <div className="mb-6">
-           <h3 className="text-lg font-medium text-gray-900 mb-3">Upload New Attachments</h3>
-           <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
+           <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Upload New Attachments</h3>
+           <div className="border-2 border-dashed border-gray-300 dark:border-gray-700 rounded-lg p-6 text-center hover:border-blue-400 transition-colors">
              <input
                type="file"
                multiple
@@ -2358,10 +2436,10 @@ const handleNextBug = () => {
                id="attachment-upload"
                disabled={attachmentUploadLoading}
              />
-             <label
-               htmlFor="attachment-upload"
-               className={`inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors cursor-pointer ${attachmentUploadLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
-             >
+            <label
+              htmlFor="attachment-upload"
+              className={`btn-modern inline-flex items-center gap-2 cursor-pointer select-none ${attachmentUploadLoading ? 'opacity-50 cursor-not-allowed pointer-events-none' : ''}`}
+            >
                {attachmentUploadLoading ? (
                  <>
                    <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -2379,36 +2457,36 @@ const handleNextBug = () => {
                  </>
                )}
              </label>
-             <p className="mt-2 text-sm text-gray-600">
+               <p className="mt-2 text-sm text-gray-600 dark:text-gray-300">
                Supported formats: Images (JPG, PNG, GIF, WebP), Excel (XLSX, XLS), Word (DOCX, DOC), CSV, PDF
              </p>
-             <p className="text-xs text-gray-500">Maximum file size: 5MB per file</p>
+               <p className="text-xs text-gray-500 dark:text-gray-400">Maximum file size: 5MB per file</p>
            </div>
          </div>
          
          {/* Current Attachments */}
          <div>
-           <h3 className="text-lg font-medium text-gray-900 mb-3">Current Attachments ({attachments.length})</h3>
+             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-3">Current Attachments ({attachments.length})</h3>
            {attachments.length > 0 ? (
              <div className="space-y-3">
                {attachments.map((attachment) => (
-                 <div key={attachment.id} className="flex items-center gap-4 p-4 bg-gray-50 rounded-lg border">
+                  <div key={attachment.id} className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-800/70 rounded-lg border border-gray-200 dark:border-gray-700">
                    {/* File Icon */}
                    <div className="flex-shrink-0">
-                     {attachment.type.startsWith('image/') ? (
-                       <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                       {attachment.type.startsWith('image/') ? (
+                         <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                          <path fillRule="evenodd" d="M4 3a2 2 0 00-2 2v10a2 2 0 002 2h12a2 2 0 002-2V5a2 2 0 00-2-2H4zm12 12H4l4-8 3 6 2-4 3 6z" clipRule="evenodd" />
                        </svg>
-                     ) : attachment.type.includes('excel') || attachment.type.includes('spreadsheet') ? (
-                       <svg className="w-8 h-8 text-green-600" fill="currentColor" viewBox="0 0 20 20">
+                       ) : attachment.type.includes('excel') || attachment.type.includes('spreadsheet') ? (
+                         <svg className="w-8 h-8 text-green-600 dark:text-green-400" fill="currentColor" viewBox="0 0 20 20">
                          <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 2h8v2H6V6zm0 4h8v2H6v-2zm0 4h6v2H6v-2z" clipRule="evenodd" />
                        </svg>
-                     ) : attachment.type.includes('word') || attachment.type.includes('document') ? (
-                       <svg className="w-8 h-8 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                       ) : attachment.type.includes('word') || attachment.type.includes('document') ? (
+                         <svg className="w-8 h-8 text-blue-600 dark:text-blue-400" fill="currentColor" viewBox="0 0 20 20">
                          <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 2h8v2H6V6zm0 4h8v2H6v-2zm0 4h6v2H6v-2z" clipRule="evenodd" />
                        </svg>
                      ) : (
-                       <svg className="w-8 h-8 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+                         <svg className="w-8 h-8 text-gray-600 dark:text-gray-400" fill="currentColor" viewBox="0 0 20 20">
                          <path fillRule="evenodd" d="M4 4a2 2 0 00-2 2v8a2 2 0 002 2h12a2 2 0 002-2V6a2 2 0 00-2-2H4zm2 2h8v2H6V6zm0 4h8v2H6v-2zm0 4h6v2H6v-2z" clipRule="evenodd" />
                        </svg>
                      )}
@@ -2416,10 +2494,10 @@ const handleNextBug = () => {
                    
                    {/* File Info */}
                    <div className="flex-1 min-w-0">
-                     <h4 className="text-sm font-medium text-gray-900 truncate" title={attachment.name}>
+                       <h4 className="text-sm font-medium text-gray-900 dark:text-white truncate" title={attachment.name}>
                        {attachment.name}
                      </h4>
-                     <p className="text-xs text-gray-500">
+                       <p className="text-xs text-gray-500 dark:text-gray-400">
                        {new Date(attachment.uploadDate).toLocaleDateString()} • {(attachment.size / 1024 / 1024).toFixed(2)} MB
                      </p>
                    </div>
@@ -2433,7 +2511,7 @@ const handleNextBug = () => {
                            handleRenameAttachment(attachment.id, newName);
                          }
                        }}
-                       className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300 hover:border-blue-400 rounded-full"
+                         className="p-2 bg-blue-100 hover:bg-blue-200 text-blue-700 border-blue-300 hover:border-blue-400 rounded-full dark:bg-blue-900/40 dark:text-blue-300 dark:border-blue-600 dark:hover:bg-blue-900/60"
                        title="Rename"
                      >
                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2442,7 +2520,7 @@ const handleNextBug = () => {
                      </Button>
                      <Button
                        onClick={() => handleDownloadAttachment(attachment)}
-                       className="p-2 bg-green-100 hover:bg-green-200 text-green-700 border-green-300 hover:border-green-400 rounded-full"
+                         className="p-2 bg-green-100 hover:bg-green-200 text-green-700 border-green-300 hover:border-green-400 rounded-full dark:bg-green-900/40 dark:text-green-300 dark:border-green-600 dark:hover:bg-green-900/60"
                        title="Download"
                      >
                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2451,7 +2529,7 @@ const handleNextBug = () => {
                      </Button>
                      <Button
                        onClick={() => handleDeleteAttachment(attachment.id)}
-                       className="p-2 bg-red-100 hover:bg-red-200 text-red-700 border-red-300 hover:border-red-400 rounded-full"
+                         className="p-2 bg-red-100 hover:bg-red-200 text-red-700 border-red-300 hover:border-red-400 rounded-full dark:bg-red-900/40 dark:text-red-300 dark:border-red-600 dark:hover:bg-red-900/60"
                        title="Delete"
                      >
                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2463,8 +2541,8 @@ const handleNextBug = () => {
                ))}
              </div>
            ) : (
-             <div className="text-center py-8 text-gray-500">
-               <svg className="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+               <div className="text-center py-8 text-gray-500 dark:text-gray-400">
+                 <svg className="mx-auto h-12 w-12 text-gray-400 dark:text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
                </svg>
                <p className="mt-2 text-sm">No attachments uploaded yet</p>
@@ -2474,10 +2552,10 @@ const handleNextBug = () => {
        </div>
        
        {/* Modal Footer */}
-       <div className="flex justify-end gap-3 p-6 border-t border-gray-200 bg-gray-50">
+         <div className="flex justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
          <Button
            onClick={() => setShowAttachmentsModal(false)}
-           className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50"
+             className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 dark:text-white dark:bg-gray-900 dark:border-gray-700 dark:hover:bg-gray-800"
          >
            Close
          </Button>
@@ -2643,15 +2721,14 @@ function BugTable({ bugs, search, statusFilter, assigneeFilter, environmentFilte
  }
  };
  return (
- <div className="overflow-x-auto">
- <table className="min-w-full text-sm text-left text-gray-900 bg-white border" style={{ backgroundColor: '#fff' }}>
- <thead className="bg-gray-100">
+ <div className="overflow-x-auto rounded-xl">
+ <table className="min-w-full text-sm text-left text-gray-900 dark:text-gray-100 glass-card">
+ <thead className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-900/50 dark:to-purple-900/50">
  <tr>
  {bugsListFields.map(field => (
  <th
  key={field.key}
- className="px-4 py-2 cursor-pointer"
- style={{ backgroundColor: '#fff', color: '#222' }}
+ className="px-6 py-4 cursor-pointer font-semibold text-gray-800 dark:text-gray-200 hover:bg-blue-100 dark:hover:bg-blue-800/50 transition-colors duration-200"
  title={field.desc}
  >
  {field.label}
@@ -2659,19 +2736,29 @@ function BugTable({ bugs, search, statusFilter, assigneeFilter, environmentFilte
  ))}
  </tr>
  </thead>
- <tbody>
+ <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
  {filtered.map((bug, idx) => (
- <tr key={idx} className="border-b" style={{ backgroundColor: '#fff', color: '#222' }}>
+ <tr key={idx} className="hover:bg-blue-50/50 dark:hover:bg-blue-900/20 transition-all duration-200 transform hover:scale-[1.01]">
  {bugsListFields.map(field => (
- <td key={field.key} className="px-4 py-2" style={{ backgroundColor: '#fff', color: '#222' }}>{
+ <td key={field.key} className="px-6 py-4 text-gray-700 dark:text-gray-300">{
  field.key === 'incidentId'
- ? <button className="text-blue-700 underline" onClick={() => { setSelectedBug(bug); setTabValue('tab1'); }}>{bug[field.key]}</button>
+ ? <Button variant="ghost" size="sm" onClick={() => { setSelectedBug(bug); setTabValue('tab1'); }} className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-200 font-medium">{bug[field.key]}</Button>
  : bug[field.key]
  }</td>
  ))}
  </tr>
  ))}
- {filtered.length === 0 && <tr><td colSpan={bugsListFields.length} className="text-center text-gray-400 py-8">No bugs found.</td></tr>}
+ {filtered.length === 0 && (
+ <tr>
+ <td colSpan={bugsListFields.length} className="text-center text-gray-400 dark:text-gray-500 py-12">
+ <div className="flex flex-col items-center gap-4">
+ <div className="text-4xl opacity-50">📋</div>
+ <div className="text-lg font-medium">No bugs found</div>
+ <div className="text-sm">Try adjusting your search criteria</div>
+ </div>
+ </td>
+ </tr>
+ )}
  </tbody>
  </table>
  </div>

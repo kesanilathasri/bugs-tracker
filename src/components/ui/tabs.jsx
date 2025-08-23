@@ -1,11 +1,15 @@
 import React from "react";
 
 export function Tabs({ value, onValueChange, children, className = "" }) {
-  return <div className={className}>{children}</div>;
+  return <div className={`space-y-6 ${className}`}>{children}</div>;
 }
 
 export function TabsList({ children, className = "" }) {
-  return <div className={className}>{children}</div>;
+  return (
+    <div className={`inline-flex glass-card p-2 gap-2 ${className}`}>
+      {children}
+    </div>
+  );
 }
 
 export function TabsTrigger({ value: triggerValue, children, className = "" }) {
@@ -16,13 +20,16 @@ export function TabsTrigger({ value: triggerValue, children, className = "" }) {
   return (
     <button
       onClick={() => onValueChange(triggerValue)}
-      className={`px-4 py-2 border rounded transition-all ${
+      className={`px-6 py-3 rounded-lg font-semibold transition-all duration-300 ease-out transform relative overflow-hidden ${
         isActive
-          ? "bg-blue-600 text-white border-blue-600"
-          : "bg-gray-100 hover:bg-gray-200 text-black"
+          ? "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-lg scale-105"
+          : "bg-transparent hover:bg-white/20 dark:hover:bg-black/20 text-gray-600 dark:text-gray-300 hover:text-gray-800 dark:hover:text-white hover:scale-105"
       } ${className}`}
     >
-      {children}
+      {isActive && (
+        <div className="absolute inset-0 bg-gradient-to-r from-blue-400/20 to-purple-500/20 animate-shimmer"></div>
+      )}
+      <span className="relative z-10">{children}</span>
     </button>
   );
 }
@@ -30,7 +37,11 @@ export function TabsTrigger({ value: triggerValue, children, className = "" }) {
 export function TabsContent({ value: contentValue, children }) {
   const { value } = React.useContext(TabsContext);
   if (value !== contentValue) return null;
-  return <div className="mt-4">{children}</div>;
+  return (
+    <div className="animate-fade-in">
+      {children}
+    </div>
+  );
 }
 
 // ------------------ TabsContext ------------------
