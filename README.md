@@ -319,3 +319,19 @@ Special thanks to Cursor IDE, other contributors and open-source libraries.
 **My Defect Management System is now running at: http://localhost:5173**
 
 ---
+
+## 🌐 Deploy to GitHub Pages
+
+This repo includes an automated GitHub Actions workflow for Pages.
+
+- URL pattern: https://<your-username>.github.io/bugs-tracker/
+- Vite base is auto-configured when building in CI.
+
+Steps:
+1. Push your code to the default branch (master or main).
+2. In GitHub: Settings → Pages → Build and deployment → Source: GitHub Actions.
+3. Wait for the workflow to finish; your site will be live at the URL above.
+
+Notes:
+- SPA routing works via a 404.html fallback.
+- Local dev and non-Pages hosts use base '/'.
